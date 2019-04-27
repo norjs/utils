@@ -20,13 +20,13 @@ const LogicUtils = require('./LogicUtils.js');
  *
  * @type {boolean}
  */
-const DEFINE_DEFAULTS_JUST_IN_TIME = true;
+let DEFINE_DEFAULTS_JUST_IN_TIME = true;
 
 /**
  *
  * @type {boolean}
  */
-const DEFAULTS_DEFINED = false;
+let DEFAULTS_DEFINED = false;
 
 /**
  * Test functions for each type mapped by type name.
