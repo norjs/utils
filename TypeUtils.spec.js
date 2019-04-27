@@ -125,6 +125,33 @@ describe('TypeUtils', () => {
                 it('throws when invalid type', () => assert.throws(() => TypeUtils.assert(true, "string|{foo:string}"), TypeError));
             });
 
+            describe('Object.<string, string>|{foo:string}', () => {
+                it('can assert object type', () => TypeUtils.assert({foo:"hello"}, "Object.<string, string>|{foo:string}"));
+                it('can assert string type', () => TypeUtils.assert({bar: "world"}, "Object.<string, string>|{foo:string}"));
+
+                it('throws when invalid value', () => assert.throws(
+                    () => TypeUtils.assert(
+                        true,
+                        "Object.<string, string>|{foo:string}"),
+                    TypeError)
+                );
+
+                it('throws when invalid property', () => assert.throws(
+                    () => TypeUtils.assert(
+                        {"foo": 123},
+                        "Object.<string, string>|{foo:string}"),
+                    TypeError)
+                );
+
+                it('throws when invalid custom property', () => assert.throws(
+                    () => TypeUtils.assert(
+                        {"bar": 123},
+                        "Object.<string, string>|{foo:string}"),
+                    TypeError)
+                );
+
+            });
+
             // intersection
             describe('{foo:string} & {bar: number}', () => {
                 it('can assert string type', () => TypeUtils.assert({foo: "hello"}, "{foo:string} & {bar: number}"));
