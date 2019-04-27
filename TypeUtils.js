@@ -80,7 +80,7 @@ class TypeUtils {
      *
      *
      * @param name {string} Defines a type
-     * @param type {string} JSDoc style type string
+     * @param type {Object.<string,string>|string} JSDoc style type string or mapped test functions for properties
      */
     static defineType (name, type) {
 
