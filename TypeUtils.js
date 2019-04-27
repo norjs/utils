@@ -71,7 +71,7 @@ class TypeUtils {
 
         const result = this._test(value, type, type);
         if (!this._getResultValue(result)) {
-            const description = this._getResultDescription(result) || `Value "${value}" is not "${type}"`;
+            const description = this._getResultDescription(result) || `Value "${this.toString(value)}" is not "${type}"`;
             throw new TypeError(`Assertion failed: ${description}`);
         }
     }
@@ -448,7 +448,7 @@ class TypeUtils {
 
         return {
             value: false,
-            description: `Object "${obj}" failed to test as "${origType}"`,
+            description: `Object "${this.toString(obj)}" failed to test as "${origType}"`,
             failed: results
         };
     }
@@ -470,7 +470,7 @@ class TypeUtils {
                 // console.debug(`Key "${key}" did not have a test function.`);
                 failed.push({
                     value: false,
-                    description: `Property "${key}" in "${obj}" was not defined in "${origType}"`,
+                    description: `Property "${key}" in "${this.toString(obj)}" was not defined in "${origType}"`,
                 });
                 return;
             }
@@ -486,7 +486,7 @@ class TypeUtils {
             if (!valueResultValue) {
                 failed.push({
                     value: false,
-                    description: `Property "${key}" in "${obj}" failed test in "${origType}"`,
+                    description: `Property "${key}" in "${this.toString(obj)}" failed test in "${origType}"`,
                     failed: [valueResult]
                 });
             }
@@ -501,7 +501,7 @@ class TypeUtils {
 
         return {
             value: false,
-            description: `Object "${obj}" failed to test as "${origType}"`,
+            description: `Object "${this.toString(obj)}" failed to test as "${origType}"`,
             failed
         };
     }
@@ -527,7 +527,7 @@ class TypeUtils {
         } else {
             return {
                 value: false,
-                description: `Value "${value}" did not match "${type}"`,
+                description: `Value "${this.toString(value)}" did not match "${type}"`,
                 failed
             }
         }
@@ -575,13 +575,25 @@ class TypeUtils {
         } else {
             return {
                 value: false,
-                description: `Value "${value}" did not match "${type}"`,
+                description: `Value "${this.toString(value)}" did not match "${type}"`,
                 failed
             }
         }
 
     }
 
+    /**
+     *
+     * @param value {*}
+     * @return {string}
+     * @private
+     */
+    static toString (value) {
+        if (value === undefined) return "undefined";
+        if (_.isNull(value)) return "null";
+        if (_.isObject(value)) return JSON.stringify(value);
+        return `${value}`;
+    }
 }
 
 module.exports = TypeUtils;
