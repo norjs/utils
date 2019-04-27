@@ -1,5 +1,5 @@
-import _ from 'lodash';
-import LogicUtils from './LogicUtils.js';
+const _ = require('lodash');
+const LogicUtils = require('./LogicUtils.js');
 
 /**
  * @typedef {object} TestResult
@@ -17,6 +17,18 @@ import LogicUtils from './LogicUtils.js';
  */
 
 /**
+ *
+ * @type {boolean}
+ */
+const DEFINE_DEFAULTS_JUST_IN_TIME = true;
+
+/**
+ *
+ * @type {boolean}
+ */
+const DEFAULTS_DEFINED = false;
+
+/**
  * Test functions for each type mapped by type name.
  *
  * @type {Object.<string, function>}
@@ -26,7 +38,7 @@ const TESTS = {};
 /**
  *
  */
-export default class TypeUtils {
+class TypeUtils {
 
     /**
      * Tests if a value matches type criteria.
@@ -36,6 +48,10 @@ export default class TypeUtils {
      * @returns {boolean}
      */
     static test (value, type) {
+        if (DEFINE_DEFAULTS_JUST_IN_TIME && !DEFAULTS_DEFINED) {
+            this.defineDefaults();
+        }
+
         const result = this._test(value, type, type);
         return this._getResultValue(result);
     }
@@ -48,6 +64,11 @@ export default class TypeUtils {
      * @throws {TypeError} if `value` doesn't match type criteria in `type`
      */
     static assert (value, type) {
+
+        if (DEFINE_DEFAULTS_JUST_IN_TIME && !DEFAULTS_DEFINED) {
+            this.defineDefaults();
+        }
+
         const result = this._test(value, type, type);
         if (!this._getResultValue(result)) {
             const description = this._getResultDescription(result) || `Value "${value}" is not "${type}"`;
@@ -62,6 +83,10 @@ export default class TypeUtils {
      * @param type {string} JSDoc style type string
      */
     static defineType (name, type) {
+
+        if (DEFINE_DEFAULTS_JUST_IN_TIME && !DEFAULTS_DEFINED) {
+            this.defineDefaults();
+        }
 
         if (_.isString(type)) {
             this._defineTypeTest(name, this._compileTestFunction(type));
@@ -84,6 +109,10 @@ export default class TypeUtils {
      * Define default JSDoc and JavaScript types
      */
     static defineDefaults () {
+
+        if (DEFAULTS_DEFINED) {
+            return;
+        }
 
         // Basic types
         this._defineTypeTest("string",    value => _.isString(value));
@@ -108,6 +137,14 @@ export default class TypeUtils {
         this._defineAliasType("Array", "array");
         this._defineAliasType("Promise", "promise");
 
+        DEFAULTS_DEFINED = true;
+    }
+
+    /**
+     * Define default JSDoc and JavaScript types
+     */
+    static setDefineDefaultsJustInTime (value) {
+        DEFINE_DEFAULTS_JUST_IN_TIME = !!value;
     }
 
     /**
@@ -116,9 +153,20 @@ export default class TypeUtils {
      * This is useful for unit testing.
      */
     static resetInitialState () {
+        if (!DEFAULTS_DEFINED) return;
         _.each(_.keys(TESTS), type => {
             delete TESTS[type];
         });
+        DEFAULTS_DEFINED = false;
+    }
+
+    /**
+     *
+     * @param value {*}
+     * @return {boolean}
+     */
+    static isPromise (value) {
+        return value ? _.isFunction(value.then) : false;
     }
 
     /**
@@ -316,15 +364,6 @@ export default class TypeUtils {
             throw new TypeError(`Could not find a type "${type}" to define alias "${name}"`);
         }
         TESTS[name] = value => TESTS[type](value);
-    }
-
-    /**
-     *
-     * @param value {*}
-     * @return {boolean}
-     */
-    static isPromise (value) {
-        return value ? _.isFunction(value.then) : false;
     }
 
     /**
@@ -544,3 +583,5 @@ export default class TypeUtils {
     }
 
 }
+
+module.exports = TypeUtils;

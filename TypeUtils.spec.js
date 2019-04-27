@@ -1,7 +1,6 @@
-import sinon from 'sinon';
 import assert from 'assert';
-import _ from 'lodash';
 import TypeUtils from './TypeUtils.js';
+TypeUtils.setDefineDefaultsJustInTime(false);
 
 describe('TypeUtils', () => {
 
