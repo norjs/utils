@@ -3,8 +3,19 @@
   "version": "1.0.0",
   "description": "Common utils for ES6 and Node.js",
   "main": "index.js",
+  "dependencies": {
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.4.4",
+    "@babel/preset-env": "^7.4.4",
+    "@babel/register": "^7.4.4",
+    "mocha": "^6.0.2",
+    "sinon": "^7.3.1"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --require @babel/register *.spec.js",
+    "test-watch": "mocha --require @babel/register --watch-extensions js --watch *.spec.js *.js"
   },
   "repository": {
     "type": "git",
@@ -12,7 +23,10 @@
   },
   "keywords": [
     "es6",
-    "nodejs"
+    "nodejs",
+    "assert",
+    "typing",
+    "testing"
   ],
   "author": "Jaakko-Heikki Heusala <jheusala@iki.fi>",
   "license": "MIT",
