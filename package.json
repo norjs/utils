@@ -14,8 +14,8 @@
     "sinon": "^7.3.1"
   },
   "scripts": {
-    "test": "mocha --require @babel/register *.spec.js",
-    "test-watch": "mocha --require @babel/register --watch-extensions js --watch *.spec.js *.js"
+    "test": "mocha --require @babel/register test/**/*.spec.js",
+    "test-watch": "mocha --require @babel/register --watch-extensions js --watch test/**/*.spec.js"
   },
   "repository": {
     "type": "git",

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import TypeUtils from './TypeUtils.js';
+import TypeUtils from '../src/TypeUtils.js';
 TypeUtils.setDefineDefaultsJustInTime(false);
 
 describe('TypeUtils', () => {

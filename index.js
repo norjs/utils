@@ -1,6 +1,20 @@
+/**
+ * @type {typeof LogicUtils}
+ */
+const Logic = require('./Logic');
+
+/**
+ * @type {typeof TypeUtils}
+ */
+const Type = require('./Type');
+
+/**
+ *
+ * @type {{Type: typeof TypeUtils, LogicUtils: typeof LogicUtils, Logic: typeof LogicUtils, TypeUtils: typeof TypeUtils}}
+ */
 module.exports = {
-    LogicUtils: require('./LogicUtils.js'),
-    TypeUtils: require('./TypeUtils.js'),
-    Logic: require('./LogicUtils.js'),
-    Type: require('./TypeUtils.js')
+    LogicUtils: Logic,
+    TypeUtils: Type,
+    Logic,
+    Type
 };
