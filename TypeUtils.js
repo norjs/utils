@@ -1,4 +1,9 @@
 const _ = require('lodash');
+
+/**
+ *
+ * @type {typeof LogicUtils}
+ */
 const LogicUtils = require('./LogicUtils.js');
 
 /**
@@ -14,6 +19,30 @@ const LogicUtils = require('./LogicUtils.js');
  * @callback testResultFunction
  * @param value {*}
  * @returns {TestResult|boolean}
+ */
+
+/**
+ * This is either a test function or an object which contains test functions for each property.
+ *
+ * See `testResultFunction` and `PropertiesTestFunctionObject` for more.
+ *
+ * @typedef {testResultFunction|PropertiesTestFunctionObject} valueTestType
+ */
+
+/**
+ * An object which contains test functions for each property by key name.
+ *
+ * See `PropertiesTestTypeObject` for un-compiled version.
+ *
+ * @typedef {Object.<string, valueTestType>} PropertiesTestFunctionObject
+ */
+
+/**
+ * An object which contains uncompiled test types for each property by key name.
+ *
+ * See `PropertiesTestFunctionObject` for compiled version.
+ *
+ * @typedef {Object.<string, string>} PropertiesTestTypeObject
  */
 
 /**
@@ -36,7 +65,7 @@ let DEFAULTS_DEFINED = false;
 const TESTS = {};
 
 /**
- *
+ * Runtime JSDoc style type checking.
  */
 class TypeUtils {
 
@@ -77,10 +106,10 @@ class TypeUtils {
     }
 
     /**
-     *
+     * Defines a new type, or overrides existing.
      *
      * @param name {string} Defines a type
-     * @param type {Object.<string,string>|string} JSDoc style type string or mapped test functions for properties
+     * @param type {PropertiesTestTypeObject|string|testResultFunction} Mapped test types for properties in an object, JSDoc style type string, or a test function.
      */
     static defineType (name, type) {
 
@@ -90,6 +119,11 @@ class TypeUtils {
 
         if (_.isString(type)) {
             this._defineTypeTest(name, this._compileTestFunction(type));
+            return;
+        }
+
+        if (_.isFunction(type)) {
+            this._defineTypeTest(name, type);
             return;
         }
 
@@ -142,6 +176,7 @@ class TypeUtils {
 
     /**
      * Define default JSDoc and JavaScript types
+     * @param value {boolean}
      */
     static setDefineDefaultsJustInTime (value) {
         DEFINE_DEFAULTS_JUST_IN_TIME = !!value;
@@ -173,7 +208,7 @@ class TypeUtils {
      * Compiles a test function for type definition.
      *
      * @param type {string} JSDoc style type string
-     * @returns {testResultFunction|Object.<string, testResultFunction>}
+     * @returns {valueTestType}
      * @private
      */
     static _compileTestFunction (type) {
@@ -318,7 +353,7 @@ class TypeUtils {
      * Defines simple type testing function.
      *
      * @param name {string} Defines a type
-     * @param test {testResultFunction|Object.<string, testResultFunction>} Testing function which returns boolean result, or testing functions for an object properties.
+     * @param test {testResultFunction|PropertiesTestFunctionObject} Testing function which returns boolean result, or testing functions for an object properties.
      * @private
      */
     static _defineTypeTest (name, test) {
@@ -326,7 +361,7 @@ class TypeUtils {
     }
 
     /**
-     * @param test {testResultFunction|Object.<string, testResultFunction>}
+     * @param test {valueTestType}
      * @param value {*}
      * @param type {string}
      * @param origType {string}
@@ -391,8 +426,8 @@ class TypeUtils {
     /**
      *
      * @param list {Array.<*>} Array of values
-     * @param test {testResultFunction} Item test function
-     * @param type {string} The item type string
+     * @param test {valueTestType} Item test function
+     * @param type {string|PropertiesTestFunctionObject} The item type string
      * @param origType {string} The full type string
      * @returns {TestResult}
      * @private
@@ -401,7 +436,7 @@ class TypeUtils {
         const results = [];
 
         _.forEach(list, item => {
-            const result = test(item);
+            const result = this._callTestFunction(test, item, type, origType);
             const resultValue = this._getResultValue(result);
             if (!resultValue) results.push(result);
         });
@@ -419,8 +454,8 @@ class TypeUtils {
     /**
      *
      * @param obj {Object} Object
-     * @param keyTest {testResultFunction} Key test function
-     * @param valueTest {testResultFunction} Value test function
+     * @param keyTest {valueTestType} Key test function
+     * @param valueTest {valueTestType} Value test function
      * @param keyType {string} The item type string
      * @param valueType {string} The value type string
      * @param origType {string} The full type string
@@ -456,7 +491,7 @@ class TypeUtils {
     /**
      *
      * @param obj {Object} Object
-     * @param propertyTestFunctions {Object.<string, testResultFunction>} Property test functions
+     * @param propertyTestFunctions {PropertiesTestFunctionObject} Property test functions
      * @param origType {string} The full type string
      * @returns {TestResult}
      * @private
@@ -509,7 +544,7 @@ class TypeUtils {
     /**
      *
      * @param value {*}
-     * @param tests {Array.<Function>}
+     * @param tests {Array.<valueTestType>}
      * @param type {string}
      * @private
      */
@@ -536,7 +571,7 @@ class TypeUtils {
     /**
      *
      * @param value {*}
-     * @param tests {Array.<Function>}
+     * @param tests {Array.<valueTestType>}
      * @param type {string}
      * @private
      */
@@ -594,6 +629,54 @@ class TypeUtils {
         if (_.isObject(value)) return JSON.stringify(value);
         return `${value}`;
     }
+
+    /**
+     * Converts a class into object method property mapping.
+     *
+     * Useful for mapping non-real interface classes.
+     *
+     * @param Class {function} The class
+     * @return {Object.<string, string>} Mapping of each property in prototype to specific type.
+     */
+    static classToObjectPropertyTypes (Class) {
+        return _.keys(Class.prototype).reduce( (obj, key) => {
+            const value = Class.prototype[key];
+            if (_.isFunction(value)) {
+                obj[key] = 'function';
+            }
+            else if (_.isArray(value)) {
+                obj[key] = 'array';
+            }
+            else if (_.isObject(value)) {
+                obj[key] = 'object';
+            }
+            else if (_.isString(value)) {
+                obj[key] = 'string';
+            }
+            else if (_.isNumber(value)) {
+                obj[key] = 'number';
+            }
+            else if (_.isBoolean(value)) {
+                obj[key] = 'boolean';
+            }
+            return obj;
+        }, {});
+    }
+
+    /**
+     * Will create a test function for a class instance.
+     *
+     * @param Class {Function} The class to test for
+     * @returns {function(*): boolean}
+     */
+    static classToTestType (Class) {
+        return value => value instanceof Class;
+    }
+
 }
 
+/**
+ *
+ * @type {typeof TypeUtils}
+ */
 module.exports = TypeUtils;
