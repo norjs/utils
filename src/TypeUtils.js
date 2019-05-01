@@ -626,6 +626,7 @@ class TypeUtils {
     static toString (value) {
         if (value === undefined) return "undefined";
         if (_.isNull(value)) return "null";
+        if (_.isFunction(value)) return "function";
         if (_.isObject(value)) return JSON.stringify(value);
         return `${value}`;
     }
