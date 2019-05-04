@@ -14,6 +14,11 @@ const LogicUtils = require('./LogicUtils.js');
  */
 
 /**
+ * @typedef {object} TypeOptionsObject
+ * @property {boolean} acceptUndefinedProperties - If `true`, will not fail for undefined (in the type definition) object properties.
+ */
+
+/**
  * Type of test functions.
  *
  * @callback testResultFunction
@@ -65,6 +70,12 @@ let DEFAULTS_DEFINED = false;
 const TESTS = {};
 
 /**
+ *
+ * @type {Object.<string, TypeOptionsObject>}
+ */
+const OPTIONS = {};
+
+/**
  * Runtime JSDoc style type checking.
  */
 class TypeUtils {
@@ -110,24 +121,28 @@ class TypeUtils {
      *
      * @param name {string} Defines a type
      * @param type {PropertiesTestTypeObject|string|testResultFunction} Mapped test types for properties in an object, JSDoc style type string, or a test function.
+     * @param options {TypeOptionsObject}
      */
-    static defineType (name, type) {
+    static defineType (name, type, options = {}) {
 
         if (DEFINE_DEFAULTS_JUST_IN_TIME && !DEFAULTS_DEFINED) {
             this.defineDefaults();
         }
 
         if (_.isString(type)) {
+            this._setTypeOptions(name, options);
             this._defineTypeTest(name, this._compileTestFunction(type));
             return;
         }
 
         if (_.isFunction(type)) {
+            this._setTypeOptions(name, options);
             this._defineTypeTest(name, type);
             return;
         }
 
         if (_.isPlainObject(type)) {
+            this._setTypeOptions(name, options);
             let propertyTestFunctions = {};
             _.keys(type).forEach(key => {
                 propertyTestFunctions[key] = this._compileTestFunction(type[key]);
@@ -361,6 +376,17 @@ class TypeUtils {
     }
 
     /**
+     * Sets type options for a type.
+     *
+     * @param name {string} The type name
+     * @param options {TypeOptionsObject}
+     * @private
+     */
+    static _setTypeOptions (name, options) {
+        OPTIONS[name] = options;
+    }
+
+    /**
      * @param test {valueTestType}
      * @param value {*}
      * @param type {string}
@@ -481,9 +507,11 @@ class TypeUtils {
 
         if (resultValue) return {value:true};
 
+        const failedDescription = _.filter(results, f => !f.value && f.description).map(f => f.description).join(', ');
+
         return {
             value: false,
-            description: `Object "${this.toString(obj)}" failed to test as "${origType}"`,
+            description: `Object "${this.toString(obj)}" failed to test as "${origType}": ${failedDescription}`,
             failed: results
         };
     }
@@ -499,10 +527,20 @@ class TypeUtils {
     static _testEveryObjectPropertyResult (obj, propertyTestFunctions, origType) {
         const failed = [];
 
+        /**
+         * @type {TypeOptionsObject}
+         */
+        const options = _.has(OPTIONS, origType) ? OPTIONS[origType] : {};
+
         _.forEach(_.keys(obj), key => {
 
             if (!_.has(propertyTestFunctions, key)) {
                 // console.debug(`Key "${key}" did not have a test function.`);
+
+                if (options.acceptUndefinedProperties) {
+                    return;
+                }
+
                 failed.push({
                     value: false,
                     description: `Property "${key}" in "${this.toString(obj)}" was not defined in "${origType}"`,
@@ -534,9 +572,11 @@ class TypeUtils {
 
         // console.debug(`failed = `, failed, ` as "${resultValue}"`);
 
+        const failedDescription = _.filter(failed, f => !f.value && f.description).map(f => f.description).join(', ');
+
         return {
             value: false,
-            description: `Object "${this.toString(obj)}" failed to test as "${origType}"`,
+            description: `Object "${this.toString(obj)}" failed to test as "${origType}": ${failedDescription}`,
             failed
         };
     }
@@ -627,8 +667,31 @@ class TypeUtils {
         if (value === undefined) return "undefined";
         if (_.isNull(value)) return "null";
         if (_.isFunction(value)) return "function";
-        if (_.isObject(value)) return JSON.stringify(value);
+        if (_.isObject(value)) return this._shortifyText(JSON.stringify(value), 80);
         return `${value}`;
+    }
+
+    /**
+     *
+     * @param value {string}
+     * @param limit {number}
+     * @private
+     */
+    static _shortifyText (value, limit) {
+        if (limit >= 5+3 && value.length >= limit) {
+            return `${value.substr(0, limit - (5+3))} ... ${value.substr(value.length - 3)}`;
+        }
+        return value;
+    }
+
+    /**
+     * Get property names from Class prototype.
+     *
+     * @param Class {function}
+     * @return {string[]}
+     */
+    static getClassPropertyNames (Class) {
+        return Object.getOwnPropertyNames(Class.prototype);
     }
 
     /**
@@ -640,7 +703,7 @@ class TypeUtils {
      * @return {Object.<string, string>} Mapping of each property in prototype to specific type.
      */
     static classToObjectPropertyTypes (Class) {
-        return _.keys(Class.prototype).reduce( (obj, key) => {
+        return this.getClassPropertyNames(Class).reduce( (obj, key) => {
             const value = Class.prototype[key];
             if (_.isFunction(value)) {
                 obj[key] = 'function';
