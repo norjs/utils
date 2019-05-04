@@ -111,7 +111,7 @@ class TypeUtils {
 
         const result = this._test(value, type, type);
         if (!this._getResultValue(result)) {
-            const description = this._getResultDescription(result) || `Value "${this.toString(value)}" is not "${type}"`;
+            const description = this._getResultDescription(result) || `Value "${this.stringify(value)}" is not "${type}"`;
             throw new TypeError(`Assertion failed: ${description}`);
         }
     }
@@ -175,6 +175,13 @@ class TypeUtils {
         this._defineTypeTest("array",     value => _.isArray(value));
         this._defineTypeTest("object",    value => _.isObject(value));
         this._defineTypeTest("promise",   value => TypeUtils.isPromise(value));
+        this._defineTypeTest("Error",   value => value instanceof Error);
+        this._defineTypeTest("TypeError",   value => value instanceof TypeError);
+        this._defineTypeTest("URIError",   value => value instanceof URIError);
+        this._defineTypeTest("SyntaxError",   value => value instanceof SyntaxError);
+        this._defineTypeTest("ReferenceError",   value => value instanceof ReferenceError);
+        this._defineTypeTest("RangeError",   value => value instanceof RangeError);
+        this._defineTypeTest("EvalError",   value => value instanceof EvalError);
 
         // Aliases
         this._defineAliasType("String", "string");
@@ -302,7 +309,7 @@ class TypeUtils {
 
         // `{}`
         if (type === '{}') {
-            return {};
+            return TESTS['object'];
         }
 
         // `{key:type[, key2:type2]}`
@@ -471,9 +478,11 @@ class TypeUtils {
 
         if (resultValue) return {value:true};
 
+        const failedDescription = _.filter(results, f => !f.value && f.description).map(f => f.description).join(', ');
+
         return {
             value: resultValue,
-            description: `One in "${list}" failed to test as "${type}" in "${origType}"`
+            description: `One in "${list}" failed to test as "${type}" in "${origType}": ${failedDescription}`
         };
     }
 
@@ -511,7 +520,7 @@ class TypeUtils {
 
         return {
             value: false,
-            description: `Object "${this.toString(obj)}" failed to test as "${origType}": ${failedDescription}`,
+            description: `Object "${this.stringify(obj)}" failed to test as "${origType}": ${failedDescription}`,
             failed: results
         };
     }
@@ -543,7 +552,7 @@ class TypeUtils {
 
                 failed.push({
                     value: false,
-                    description: `Property "${key}" in "${this.toString(obj)}" was not defined in "${origType}"`,
+                    description: `Property "${key}" in "${this.stringify(obj)}" was not defined in "${origType}"`,
                 });
                 return;
             }
@@ -559,7 +568,7 @@ class TypeUtils {
             if (!valueResultValue) {
                 failed.push({
                     value: false,
-                    description: `Property "${key}" in "${this.toString(obj)}" failed test in "${origType}"`,
+                    description: `Property "${key}" in "${this.stringify(obj)}" failed test in "${origType}"`,
                     failed: [valueResult]
                 });
             }
@@ -576,7 +585,7 @@ class TypeUtils {
 
         return {
             value: false,
-            description: `Object "${this.toString(obj)}" failed to test as "${origType}": ${failedDescription}`,
+            description: `Object "${this.stringify(obj)}" failed to test as "${origType}": ${failedDescription}`,
             failed
         };
     }
@@ -602,7 +611,7 @@ class TypeUtils {
         } else {
             return {
                 value: false,
-                description: `Value "${this.toString(value)}" did not match "${type}"`,
+                description: `Value "${this.stringify(value)}" did not match "${type}"`,
                 failed
             }
         }
@@ -650,7 +659,7 @@ class TypeUtils {
         } else {
             return {
                 value: false,
-                description: `Value "${this.toString(value)}" did not match "${type}"`,
+                description: `Value "${this.stringify(value)}" did not match "${type}"`,
                 failed
             }
         }
@@ -658,17 +667,82 @@ class TypeUtils {
     }
 
     /**
+     * Turns anything to shortened human readable string presentation.
      *
      * @param value {*}
      * @return {string}
-     * @private
+     */
+    static stringify (value) {
+
+        const limit = 80;
+
+        if (value === undefined) return "undefined";
+
+        if (_.isNull(value)) return "null";
+
+        if (_.isFunction(value)) return "function";
+
+        if (_.isObject(value)) {
+
+            if (value instanceof Error) {
+                return this._shortifyText(`${value}`, limit);
+            }
+
+            let result;
+
+            if (value && !_.isPlainObject(value) && _.isFunction(value.toString) ) {
+                return this._shortifyText(`${value.toString()}`, limit);
+            }
+
+            /**
+             * Cache for circular references.
+             *
+             * @type {Array.<Object>}
+             */
+            let cache = [];
+
+            try {
+                result = this._shortifyText(JSON.stringify(
+                    value,
+                    (key, value) => {
+                        if (_.isObject(value) && !_.isNull(value)) {
+
+                            if (cache.indexOf(value) !== -1) {
+                                // Duplicate reference found
+                                try {
+                                    // If this value does not reference a parent it can be deduped
+                                    return JSON.parse(JSON.stringify(value));
+                                } catch (error) {
+                                    // discard key if value cannot be deduped
+                                    return '__CIRCULAR_REFERENCE__';
+                                }
+                            }
+
+                            // Store value in our collection
+                            cache.push(value);
+                        }
+                        return value;
+                    }
+                ), limit);
+            } finally {
+                cache = undefined;
+            }
+            return result;
+        }
+
+        return this._shortifyText(`${value}`, limit);
+    }
+
+    /**
+     * Use `TypeUtils.stringify(value)` instead because `toString()` has conflicting
+     * interface in ES6.
+     *
+     * @param value {*}
+     * @return {string}
+     * @deprecated
      */
     static toString (value) {
-        if (value === undefined) return "undefined";
-        if (_.isNull(value)) return "null";
-        if (_.isFunction(value)) return "function";
-        if (_.isObject(value)) return this._shortifyText(JSON.stringify(value), 80);
-        return `${value}`;
+        return this.stringify(value);
     }
 
     /**
