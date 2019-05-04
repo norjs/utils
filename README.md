@@ -111,7 +111,13 @@ TypeUtils.defineType("Foo", TypeUtils.classToTestType(Foo));
 class FooInterface {
     // ...    
 }
-TypeUtils.defineType("FooInterface", TypeUtils.classToObjectPropertyTypes(FooInterface));
+TypeUtils.defineType(
+  "FooInterface", 
+  TypeUtils.classToObjectPropertyTypes(FooInterface),
+  {
+    acceptUndefinedProperties: true // Accept test subject to have properties not defined in FooInterface
+  }
+);
 ```
 
 ----------------------------------------------------------------------------------------------------
