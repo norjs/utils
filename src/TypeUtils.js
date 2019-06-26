@@ -15,7 +15,8 @@ const LogicUtils = require('./LogicUtils.js');
 
 /**
  * @typedef {object} TypeOptionsObject
- * @property {boolean} acceptUndefinedProperties - If `true`, will not fail for undefined (in the type definition) object properties.
+ * @property {boolean} [acceptUndefinedProperties] - If `true`, will not fail for undefined (in the type definition) object properties.
+ * @property {Array.<string>} [template] - Optional template parameters
  */
 
 /**
@@ -61,6 +62,12 @@ let DEFINE_DEFAULTS_JUST_IN_TIME = true;
  * @type {boolean}
  */
 let DEFAULTS_DEFINED = false;
+
+/**
+ *
+ * @type {RegExp}
+ */
+const ACCEPTED_TYPE_CHAR = /^[a-zA-Z0-9_*]$/;
 
 /**
  * Test functions for each type mapped by type name.
@@ -164,6 +171,7 @@ class TypeUtils {
         }
 
         // Basic types
+        this._defineTypeTest("any",       () => true);
         this._defineTypeTest("string",    value => _.isString(value));
         this._defineTypeTest("number",    value => _.isNumber(value));
         this._defineTypeTest("boolean",   value => _.isBoolean(value));
@@ -175,23 +183,25 @@ class TypeUtils {
         this._defineTypeTest("array",     value => _.isArray(value));
         this._defineTypeTest("object",    value => _.isObject(value));
         this._defineTypeTest("promise",   value => TypeUtils.isPromise(value));
-        this._defineTypeTest("Error",   value => value instanceof Error);
-        this._defineTypeTest("TypeError",   value => value instanceof TypeError);
-        this._defineTypeTest("URIError",   value => value instanceof URIError);
+
+        this._defineTypeTest("Error",         value => value instanceof Error);
+        this._defineTypeTest("TypeError",     value => value instanceof TypeError);
+        this._defineTypeTest("URIError",      value => value instanceof URIError);
         this._defineTypeTest("SyntaxError",   value => value instanceof SyntaxError);
-        this._defineTypeTest("ReferenceError",   value => value instanceof ReferenceError);
-        this._defineTypeTest("RangeError",   value => value instanceof RangeError);
-        this._defineTypeTest("EvalError",   value => value instanceof EvalError);
+        this._defineTypeTest("ReferenceError",value => value instanceof ReferenceError);
+        this._defineTypeTest("RangeError",    value => value instanceof RangeError);
+        this._defineTypeTest("EvalError",     value => value instanceof EvalError);
 
         // Aliases
-        this._defineAliasType("String", "string");
-        this._defineAliasType("Number", "number");
-        this._defineAliasType("Boolean", "boolean");
-        this._defineAliasType("Symbol", "symbol");
+        this._defineAliasType("*",        "any");
+        this._defineAliasType("String",   "string");
+        this._defineAliasType("Number",   "number");
+        this._defineAliasType("Boolean",  "boolean");
+        this._defineAliasType("Symbol",   "symbol");
         this._defineAliasType("Function", "function");
-        this._defineAliasType("Object", "object");
-        this._defineAliasType("Array", "array");
-        this._defineAliasType("Promise", "promise");
+        this._defineAliasType("Object",   "object");
+        this._defineAliasType("Array",    "array");
+        this._defineAliasType("Promise",  "promise");
 
         DEFAULTS_DEFINED = true;
     }
@@ -235,127 +245,192 @@ class TypeUtils {
      */
     static _compileTestFunction (type) {
 
-        type = _.trim(type);
+        /**
+         * @type {Array.<string>}
+         */
+        let templates;
+
+        /**
+         * @type {function}
+         */
+        let compiledType = undefined;
+
+        [compiledType, type, templates] = this._compileNextType(type);
+
+        if (type.length === 0) {
+            return compiledType;
+        }
 
         // OR `|` lists
-        if (type.indexOf('|') >= 0) {
+        if (type[0] === '|') {
             const tests = type.split('|').map(i => this._compileTestFunction(i));
             return value => this._testOr(value, tests, type);
         }
 
         // Intersection `&` lists
-        if (type.indexOf('&') >= 0) {
+        if (type[0] === '&') {
             const tests = type.split('&').map(i => this._compileTestFunction(i));
             return value => this._testIntersection(value, tests, type);
         }
 
-        // `*`
-        if (type === '*') {
-            return () => true;
+        // // `array<...>`, `Array<...>`, `array.<...>`, and `Array.<...>`
+        // if (_.startsWith(type, "array") || _.startsWith(type, "Array")) {
+        //     let rest = _.trim(type.substr("array".length));
+        //     if (rest && rest[0] === '.') {
+        //         rest = _.trim(rest.substr(1));
+        //     }
+        //     if ( _.startsWith(rest, "<") && _.endsWith(rest, '>') ) {
+        //         rest = _.trim(rest.substr(1, rest.length - 2));
+        //         const itemTestFunction = this._compileTestFunction(rest);
+        //         // console.debug(`Parsed "${rest}" as `, itemTestFunction);
+        //         return value => _.isArray(value) && this._everyArrayItemResult(value, itemTestFunction, rest, type);
+        //     }
+        // }
+        //
+        // // *[]
+        // if (_.endsWith(type, '[]')) {
+        //     let rest = _.trim(type.substr(0, type.length - 2));
+        //     const itemTestFunction = this._compileTestFunction(rest);
+        //     // console.debug(`Parsed "${rest}" as `, itemTestFunction);
+        //     return value => _.isArray(value) && this._everyArrayItemResult(value, itemTestFunction, rest, type);
+        // }
+        //
+        // // `object<..., ...>`, `Object<..., ...>`, `object.<..., ...>`, and `Object.<..., ...>`
+        // if (_.startsWith(type, "object") || _.startsWith(type, "Object")) {
+        //     let rest = _.trim(type.substr("object".length));
+        //     if (rest && rest[0] === '.') {
+        //         rest = _.trim(rest.substr(1));
+        //     }
+        //     if ( _.startsWith(rest, "<") && _.endsWith(rest, '>') ) {
+        //         rest = _.trim(rest.substr(1, rest.length - 2));
+        //
+        //         const index = rest.indexOf(',');
+        //         if (index >= 0) {
+        //             const keyType = _.trim(rest.substr(0, index));
+        //             const valueType = _.trim(rest.substr(index+1));
+        //
+        //             const keyTestFunction = this._compileTestFunction(keyType);
+        //             const valueTestFunction = this._compileTestFunction(valueType);
+        //
+        //             // console.debug(`Parsed "${keyType}" as `, keyTestFunction);
+        //             // console.debug(`Parsed "${valueType}" as `, valueTestFunction);
+        //             return value => _.isObject(value) && this._everyObjectItemResult(
+        //                 value,
+        //                 keyTestFunction,
+        //                 valueTestFunction,
+        //                 keyType,
+        //                 valueType,
+        //                 type
+        //             );
+        //         }
+        //     }
+        // }
+        //
+        // // `{}`
+        // if (type === '{}') {
+        //     return TESTS['object'];
+        // }
+        //
+        // // `{key:type[, key2:type2]}`
+        // if (_.startsWith(type, "{") && _.endsWith(type, "}")) {
+        //     let rest = _.trim(type.substr(1, type.length - 2));
+        //     let parts = _.split(rest, ",").map(i => _.trim(i));
+        //
+        //     let propertyTestFunctions = {};
+        //
+        //     _.forEach(parts, part => {
+        //         const i = part.indexOf(':');
+        //         let key, value;
+        //         if (i >= 0) {
+        //             key = _.trim(part.substr(0, i));
+        //             value = _.trim(part.substr(i+1));
+        //         } else {
+        //             key = part;
+        //             value = '*';
+        //         }
+        //         propertyTestFunctions[key] = this._compileTestFunction(value);
+        //     });
+        //
+        //     return propertyTestFunctions;
+        // }
+        //
+        // // `promise<...>`, `Promise<...>`, `promise.<...>`, and `Promise.<...>`
+        // if (_.startsWith(type, "promise") || _.startsWith(type, "Promise")) {
+        //     let rest = _.trim(type.substr("promise".length));
+        //     if (rest && rest[0] === '.') {
+        //         rest = _.trim(rest.substr(1));
+        //     }
+        //     if ( _.startsWith(rest, "<") && _.endsWith(rest, '>') ) {
+        //         rest = _.trim(rest.substr(1, rest.length - 2));
+        //         // FIXME: Should we assert something that's asynchronous?
+        //         console.warn(`Tried to assert a promise with asynchronous result type "${rest}", which is ignored.`);
+        //         return this._compileTestFunction("Promise");
+        //     }
+        // }
+        //
+        // // any other registered type
+        // if (_.has(TESTS, type)) {
+        //     return TESTS[type];
+        // }
+
+        // Handle unknown format
+        throw new TypeError(`Type definition for "${type}" was unknown.`);
+    }
+
+    /**
+     *
+     * @param aType {string}
+     * @private
+     */
+    static _compileNextType (aType) {
+
+        /**
+         * @type {string}
+         */
+        let type = _.trim(aType);
+
+        if (!type.length) {
+            throw new TypeError(`Type definition was empty: "${aType}"`);
         }
 
-        // `array<...>`, `Array<...>`, `array.<...>`, and `Array.<...>`
-        if (_.startsWith(type, "array") || _.startsWith(type, "Array")) {
-            let rest = _.trim(type.substr("array".length));
-            if (rest && rest[0] === '.') {
-                rest = _.trim(rest.substr(1));
+        // Read next characters *a-zA-Z
+
+        let i = 0;
+        let index = -1;
+        for (; i < type.length; i += 1) {
+            if (!ACCEPTED_TYPE_CHAR.test(type[i])) {
+                index = i;
+                break;
             }
-            if ( _.startsWith(rest, "<") && _.endsWith(rest, '>') ) {
-                rest = _.trim(rest.substr(1, rest.length - 2));
-                const itemTestFunction = this._compileTestFunction(rest);
-                // console.debug(`Parsed "${rest}" as `, itemTestFunction);
-                return value => _.isArray(value) && this._everyArrayItemResult(value, itemTestFunction, rest, type);
-            }
         }
 
-        // *[]
-        if (_.endsWith(type, '[]')) {
-            let rest = _.trim(type.substr(0, type.length - 2));
-            const itemTestFunction = this._compileTestFunction(rest);
-            // console.debug(`Parsed "${rest}" as `, itemTestFunction);
-            return value => _.isArray(value) && this._everyArrayItemResult(value, itemTestFunction, rest, type);
+        if (index <= 0) {
+            throw new TypeError(`No valid type found from: "${aType}"`);
         }
 
-        // `object<..., ...>`, `Object<..., ...>`, `object.<..., ...>`, and `Object.<..., ...>`
-        if (_.startsWith(type, "object") || _.startsWith(type, "Object")) {
-            let rest = _.trim(type.substr("object".length));
-            if (rest && rest[0] === '.') {
-                rest = _.trim(rest.substr(1));
-            }
-            if ( _.startsWith(rest, "<") && _.endsWith(rest, '>') ) {
-                rest = _.trim(rest.substr(1, rest.length - 2));
+        /**
+         *
+         * @type {string}
+         */
+        let typeName = type.substr(0, index);
 
-                const index = rest.indexOf(',');
-                if (index >= 0) {
-                    const keyType = _.trim(rest.substr(0, index));
-                    const valueType = _.trim(rest.substr(index+1));
+        type = type.substr(index);
 
-                    const keyTestFunction = this._compileTestFunction(keyType);
-                    const valueTestFunction = this._compileTestFunction(valueType);
+        /**
+         *
+         * @type {function}
+         */
+        let compiledType = undefined;
 
-                    // console.debug(`Parsed "${keyType}" as `, keyTestFunction);
-                    // console.debug(`Parsed "${valueType}" as `, valueTestFunction);
-                    return value => _.isObject(value) && this._everyObjectItemResult(
-                        value,
-                        keyTestFunction,
-                        valueTestFunction,
-                        keyType,
-                        valueType,
-                        type
-                    );
-                }
-            }
-        }
-
-        // `{}`
-        if (type === '{}') {
-            return TESTS['object'];
-        }
-
-        // `{key:type[, key2:type2]}`
-        if (_.startsWith(type, "{") && _.endsWith(type, "}")) {
-            let rest = _.trim(type.substr(1, type.length - 2));
-            let parts = _.split(rest, ",").map(i => _.trim(i));
-
-            let propertyTestFunctions = {};
-
-            _.forEach(parts, part => {
-                const i = part.indexOf(':');
-                let key, value;
-                if (i >= 0) {
-                    key = _.trim(part.substr(0, i));
-                    value = _.trim(part.substr(i+1));
-                } else {
-                    key = part;
-                    value = '*';
-                }
-                propertyTestFunctions[key] = this._compileTestFunction(value);
-            });
-
-            return propertyTestFunctions;
-        }
-
-        // `promise<...>`, `Promise<...>`, `promise.<...>`, and `Promise.<...>`
-        if (_.startsWith(type, "promise") || _.startsWith(type, "Promise")) {
-            let rest = _.trim(type.substr("promise".length));
-            if (rest && rest[0] === '.') {
-                rest = _.trim(rest.substr(1));
-            }
-            if ( _.startsWith(rest, "<") && _.endsWith(rest, '>') ) {
-                rest = _.trim(rest.substr(1, rest.length - 2));
-                // FIXME: Should we assert something that's asynchronous?
-                console.warn(`Tried to assert a promise with asynchronous result type "${rest}", which is ignored.`);
-                return this._compileTestFunction("Promise");
-            }
-        }
-
-        // any other registered type
         if (_.has(TESTS, type)) {
             return TESTS[type];
         }
 
-        // Handle unknown format
-        throw new TypeError(`Type definition for "${type}" was unknown.`);
+        if (!compiledType) {
+            throw new TypeError(`Could not compile type at "${aType}"`);
+        }
+
+        return [compiledType, _.trim(type)];
     }
 
     /**
