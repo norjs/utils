@@ -3,15 +3,9 @@ const _ = require('lodash');
 
 /**
  *
- * @type {typeof TypeUtils}
- */
-const TypeUtils = require("@norjs/utils/Type");
-
-/**
- *
  * @type {typeof LogicUtils}
  */
-const LogicUtils = require('@norjs/utils/Logic');
+const LogicUtils = require('./LogicUtils.js');
 
 /**
  *
@@ -20,11 +14,39 @@ class HttpUtils {
 
     /**
      *
-     * @param value {string}
+     * @param value {string|number}
      * @return {boolean}
      */
     static isPort (value) {
+        if (_.isNumber(value)) return true;
         return _.isString(value) && /^[0-9]+/.test(value);
+    }
+
+    /**
+     *
+     * @param value {string}
+     * @return {boolean}
+     */
+    static isSocket (value) {
+        return _.isString(value) && value.length >= 1 && value[0] === '.';
+    }
+
+    /**
+     *
+     * @param value {string|number}
+     * @return {number}
+     */
+    static getPort (value) {
+
+        if (_.isNumber(value)) {
+            return value;
+        }
+
+        if (!_.isString(value)) {
+            throw new TypeError(`HttpUtils.getPort(value): Not a string: "${value}"`);
+        }
+
+        return parseInt(value, 10);
     }
 
     /**
@@ -32,13 +54,13 @@ class HttpUtils {
      * @param value {string}
      * @return {number}
      */
-    static getPort (value) {
+    static getSocket (value) {
 
         if (!_.isString(value)) {
-            throw new TypeError(`HttpUtils.getPort(value): Not a string: ${value}`);
+            throw new TypeError(`HttpUtils.getSocket(value): Not a string: "${value}"`);
         }
 
-        return parseInt(value, 10);
+        return value;
     }
 
     /**
@@ -48,7 +70,17 @@ class HttpUtils {
      * @return {string}
      */
     static getPortLabel (value) {
-        return `*:${value}`;
+        return `localhost:${value}`;
+    }
+
+    /**
+     * Returns a label for port configuration for printing user.
+     *
+     * @param value {string}
+     * @return {string}
+     */
+    static getSocketLabel (value) {
+        return `socket:${value}`;
     }
 
     /**
@@ -63,6 +95,10 @@ class HttpUtils {
             return HttpUtils.getPortLabel(value);
         }
 
+        if ( HttpUtils.isSocket(value) ) {
+            return HttpUtils.getSocketLabel(value);
+        }
+
         return value;
     }
 
@@ -75,8 +111,16 @@ class HttpUtils {
     static listen (server, value, callback) {
 
         if ( HttpUtils.isPort(value) ) {
-            server.listen(HttpUtils.getPort(value), callback);
+            server.listen(HttpUtils.getPort(value), "localhost", callback);
+            return;
         }
+
+        if ( HttpUtils.isSocket(value) ) {
+            server.listen(HttpUtils.getSocket(value), callback);
+            return;
+        }
+
+        throw new TypeError(`Unsupported listening configuration: "${value}"`);
 
     }
 
