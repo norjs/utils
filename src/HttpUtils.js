@@ -152,22 +152,32 @@ class HttpUtils {
 
                 const handleError = (err) => {
 
-                    if (err instanceof HttpError) {
-                        HttpUtils.writeErrorJson(res, err.message, err.code, err.headers);
-                        return;
-                    }
+                    LogicUtils.tryCatch(
+                        () => {
 
-                    if (err && err.stack) {
-                        console.log('Error: ' + err.stack);
-                    } else {
-                        console.log('Error: ' + err);
-                    }
+                            if (err instanceof HttpError) {
+                                HttpUtils.writeErrorJson(res, err.message, err.code, err.headers);
+                                return;
+                            }
 
-                    if (!res.headersSent) {
-                        HttpUtils.writeErrorJson(res, "Exception", 500);
-                    } else {
-                        res.end();
-                    }
+                            if (err && err.stack) {
+                                console.error('Error: ' + err.stack);
+                            } else {
+                                console.error('Error: ' + err);
+                            }
+
+                            if (!res.headersSent) {
+                                HttpUtils.writeErrorJson(res, "Exception", 500);
+                            } else {
+                                res.end();
+                            }
+
+                        },
+                        err => {
+                            console.error('ERROR in error handler: ', err);
+                            res.end();
+                        }
+                    );
 
                 };
 
@@ -223,7 +233,10 @@ class HttpUtils {
         res.setHeader('Content-Type', 'application/json');
 
         res.writeHead(code, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(data));
+
+        res.end( JSON.stringify(data) );
+
+        console.log('WOOT: We are here.')
 
     }
 
@@ -275,10 +288,11 @@ class HttpUtils {
      * @param url {string}
      * @param method {string}
      * @param routes {Object}
+     * @param args {*} Any argument which should be binded to the route callback
      * @returns {*}
      * @throws {HttpError} May throw HttpErrors
      */
-    static routeRequest ({url, method}, routes) {
+    static routeRequest({url, method}, routes, ...args) {
 
         console.log(`WOOT: url = "${url}", method = "${method}"`);
 
@@ -318,10 +332,70 @@ class HttpUtils {
         }
 
         if (_.isFunction(routes[method][url])) {
-            return routes[method][url]();
+            return routes[method][url](...args);
         }
 
         return routes[method][url];
+    }
+
+    /**
+     * Get request body data as Buffer object.
+     *
+     * @param request {HttpRequestObject}
+     * @return {Promise.<Buffer>} The request input data
+     * @protected
+     */
+    static getRequestDataAsBuffer (request) {
+        return new Promise( (resolve, reject) => {
+            LogicUtils.tryCatch(
+                () => {
+                    let chunks = [];
+
+                    request.on('data', chunk => {
+                        LogicUtils.tryCatch(() => {
+                            chunks.push(chunk);
+                        }, reject);
+                    });
+
+                    request.on('end', () => {
+                        LogicUtils.tryCatch(() => {
+                            resolve( Buffer.concat(chunks) );
+                        }, reject);
+                    });
+
+                },
+                reject
+            );
+        });
+    }
+
+    /**
+     * Get request body data as JSON.
+     *
+     * @param request {HttpRequestObject}
+     * @param encoding {string}
+     * @return {Promise<string | string>} The request input data
+     * @protected
+     */
+    static getRequestDataAsString (request, encoding = 'utf8') {
+        return HttpUtils.getRequestDataAsBuffer(request).then(buffer => buffer.toString(encoding) );
+    }
+
+    /**
+     * Get request body data as JSON.
+     *
+     * @param request {HttpRequestObject}
+     * @return {Promise.<*|undefined>} The request input data. If request data is an empty string, an `undefined` will be returned.
+     * @protected
+     */
+    static getRequestDataAsJson (request) {
+        return HttpUtils.getRequestDataAsString(request).then(dataString => {
+            if (dataString === "") {
+                return undefined;
+            } else {
+                return JSON.parse(dataString);
+            }
+        });
     }
 
 }
