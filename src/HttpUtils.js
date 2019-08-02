@@ -191,7 +191,7 @@ class HttpUtils {
                             result.then( payload => {
 
                                 if (!res.headersSent) {
-                                    HttpUtils.writeJson(res, {payload} );
+                                    HttpUtils.writeJson(res, payload );
                                 } else {
                                     res.end();
                                 }
@@ -201,7 +201,7 @@ class HttpUtils {
                         } else {
 
                             if (!res.headersSent) {
-                                HttpUtils.writeJson(res, {payload: result} );
+                                HttpUtils.writeJson(res, result );
                             } else {
                                 res.end();
                             }
@@ -343,7 +343,6 @@ class HttpUtils {
      *
      * @param request {HttpRequestObject}
      * @return {Promise.<Buffer>} The request input data
-     * @protected
      */
     static getRequestDataAsBuffer (request) {
         return new Promise( (resolve, reject) => {
@@ -375,7 +374,6 @@ class HttpUtils {
      * @param request {HttpRequestObject}
      * @param encoding {string}
      * @return {Promise<string | string>} The request input data
-     * @protected
      */
     static getRequestDataAsString (request, encoding = 'utf8') {
         return HttpUtils.getRequestDataAsBuffer(request).then(buffer => buffer.toString(encoding) );
@@ -386,7 +384,6 @@ class HttpUtils {
      *
      * @param request {HttpRequestObject}
      * @return {Promise.<*|undefined>} The request input data. If request data is an empty string, an `undefined` will be returned.
-     * @protected
      */
     static getRequestDataAsJson (request) {
         return HttpUtils.getRequestDataAsString(request).then(dataString => {
