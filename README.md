@@ -1,4 +1,4 @@
-# utils
+# @norjs/utils
 
 Common almost-non-dependable(*) utils for ES6 and Node.js, with MIT license.
 
