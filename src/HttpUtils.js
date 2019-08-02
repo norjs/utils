@@ -234,7 +234,7 @@ class HttpUtils {
 
         res.writeHead(code, { 'Content-Type': 'application/json' });
 
-        res.end( JSON.stringify(data) );
+        res.end( JSON.stringify(data) + '\n' );
 
         console.log('WOOT: We are here.')
 
