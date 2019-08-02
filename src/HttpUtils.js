@@ -236,8 +236,6 @@ class HttpUtils {
 
         res.end( JSON.stringify(data) + '\n' );
 
-        console.log('WOOT: We are here.')
-
     }
 
     /**
@@ -293,8 +291,6 @@ class HttpUtils {
      * @throws {HttpError} May throw HttpErrors
      */
     static routeRequest({url, method}, routes, ...args) {
-
-        console.log(`WOOT: url = "${url}", method = "${method}"`);
 
         switch (method) {
 
