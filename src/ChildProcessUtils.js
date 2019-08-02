@@ -23,8 +23,8 @@ class ChildProcessUtils {
      * @param uid {number}
      * @param gid {number}
      * @param shell {boolean|string}
-     * @param stdout { boolean | {[enabled]: boolean, [onData]: function, [encoding]: string} }
-     * @param stderr { boolean | {[enabled]: boolean, [onData]: function, [encoding]: string} }
+     * @param stdout { boolean | Function | {[enabled]: boolean, [onData]: function, [encoding]: string} }
+     * @param stderr { boolean | Function | {[enabled]: boolean, [onData]: function, [encoding]: string} }
      * @param unrefEnabled {boolean}
      * @param disconnectEnabled {boolean}
      * @return {Promise.<{childProcess: ChildProcess, status: number, stdout: string, stderr: string, error: *}>} Rejected promises will also have .childProcess set.
@@ -148,7 +148,7 @@ class ChildProcessUtils {
 
     /**
      *
-     * @param options { boolean | {[enabled]: boolean, [onData]: function, [encoding]: string} }
+     * @param options { boolean | Function | {[enabled]: boolean, [onData]: function, [encoding]: string} }
      * @returns { {[enabled]: boolean, [onData]: function, [encoding]: string} }
      * @private
      */
@@ -156,6 +156,11 @@ class ChildProcessUtils {
 
         if (_.isBoolean(options)) {
             options = {enabled: options};
+        } else if (_.isFunction(options)) {
+            options = {
+                enabled: true,
+                onData: options
+            };
         } else if (_.isObject(options)) {
             options = _.cloneDeep(options);
         } else {
