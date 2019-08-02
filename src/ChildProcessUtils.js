@@ -3,6 +3,8 @@ const _ = require('lodash');
 
 const CHILD_PROCESS = require('child_process');
 
+const LogicUtils = require('./LogicUtils.js');
+
 /**
  *
  */
@@ -17,55 +19,44 @@ class ChildProcessUtils {
      * @param cwd {string}
      * @param env {Object.<string, string>} Optional environment params
      * @param argv0 {string}
-     * @param stdio {Array}
      * @param detached {boolean}
      * @param uid {number}
      * @param gid {number}
      * @param shell {boolean|string}
-     * @param stdoutEnabled {boolean}
-     * @param stderrEnabled {boolean}
+     * @param stdout { boolean | {[enabled]: boolean, [onData]: function, [encoding]: string} }
+     * @param stderr { boolean | {[enabled]: boolean, [onData]: function, [encoding]: string} }
      * @param unrefEnabled {boolean}
      * @param disconnectEnabled {boolean}
-     * @return {Promise}
+     * @return {Promise.<{childProcess: ChildProcess, status: number, stdout: string, stderr: string, error: *}>} Rejected promises will also have .childProcess set.
      */
-    execute (
+    static execute (
         command,
         args,
         {
             cwd = process.cwd()
             , env = {}
             , argv0 = command
-            , stdio = ["ignore", "pipe", "pipe"]
             , detached = true
             , uid = undefined
             , gid = undefined
             , shell = false
 
-            , stdoutEnabled = undefined
-            , stderrEnabled = undefined
+            , stdout = true
+            , stderr = true
             , unrefEnabled = undefined
             , disconnectEnabled = undefined
 
         } = {}
     ) {
 
-        if (!stdio) {
+        stdout = ChildProcessUtils._parseStreamOptions(stdout);
+        stderr = ChildProcessUtils._parseStreamOptions(stderr);
 
-            stdio = ["ignore", "pipe", "pipe"];
-            stdoutEnabled = true;
-            stderrEnabled = true;
-
-        } else {
-
-            if (!stdoutEnabled && stdio && stdio.length >= 2 && stdio[1] === "pipe") {
-                stdoutEnabled = true;
-            }
-
-            if (!stderrEnabled && stdio && stdio.length >= 3 && stdio[2] === "pipe") {
-                stderrEnabled = true;
-            }
-
-        }
+        const stdio = [
+            "ignore",
+            stdout.enabled ? "pipe" : "ignore",
+            stderr.enabled ? "pipe" : "ignore"
+        ];
 
         const options = {
             cwd: cwd,
@@ -78,48 +69,59 @@ class ChildProcessUtils {
             shell
         };
 
-        // Run the process
+        /**
+         *
+         * @type {ChildProcessWithoutNullStreams}
+         */
         const proc = CHILD_PROCESS.spawn(command, args, options);
 
         const promise = new Promise( (resolve, reject) => {
+
+            const handleError = err => {
+                err.childProcess = proc;
+                reject( err );
+            };
+
             LogicUtils.tryCatch( () => {
 
                 // If command started detached and unref enabled; not waiting for it to finish.
                 if ( options.detached && unrefEnabled ) {
 
-                    resolve({});
+                    resolve({childProcess: proc});
 
                 // Handle exit
                 } else {
 
-                    let stdout = '';
-                    let stderr = '';
+                    let cache = {};
 
-                    if (stdoutEnabled) {
-                        proc.stdout.setEncoding('utf8');
-                        proc.stdout.on('data', data => {
-                            stdout += data;
-                        });
-                    }
+                    ChildProcessUtils._setupStreamReader({
+                        stream: proc.stdout,
+                        options: stdout,
+                        handleError,
+                        cache,
+                        cacheKey: 'stdout'
+                    });
 
-                    if (stderrEnabled) {
-                        proc.stderr.setEncoding('utf8');
-                        proc.stderr.on('data', data => {
-                            stderr += data;
-                        });
-                    }
+                    ChildProcessUtils._setupStreamReader({
+                        stream: proc.stderr,
+                        options: stderr,
+                        handleError,
+                        cache,
+                        cacheKey: 'stderr'
+                    });
 
                     proc.on('close', retval => {
                         if (retval === 0) {
-                            resolve({"retval": retval, "stdout": stdout, "stderr": stderr});
+                            resolve({childProcess: proc, status: retval, stdout: cache.stdout, stderr: cache.stderr});
                         } else {
-                            reject({"retval": retval, "stdout": stdout, "stderr": stderr});
+                            reject({childProcess: proc, status: retval, stdout: cache.stdout, stderr: cache.stderr});
                         }
                     });
 
                     // Handle error
                     proc.on('error', err => {
-                        reject(err);
+                        err.childProcess = proc;
+                        reject( err );
                     });
 
                 }
@@ -133,7 +135,8 @@ class ChildProcessUtils {
                 }
 
             }, err => {
-                reject(err);
+                err.childProcess = proc;
+                reject(err );
             });
 
         });
@@ -141,6 +144,76 @@ class ChildProcessUtils {
         promise.CHILD = proc;
 
         return promise;
+    }
+
+    /**
+     *
+     * @param options { boolean | {[enabled]: boolean, [onData]: function, [encoding]: string} }
+     * @returns { {[enabled]: boolean, [onData]: function, [encoding]: string} }
+     * @private
+     */
+    static _parseStreamOptions (options) {
+
+        if (_.isBoolean(options)) {
+            options = {enabled: options};
+        } else if (_.isObject(options)) {
+            options = _.cloneDeep(options);
+        } else {
+            throw new TypeError(`stream options was not an object nor boolean: '${options}'`);
+        }
+
+        if ( !_.has(options, 'encoding') ) {
+            options.encoding = 'utf8';
+        }
+
+        if (!_.isFunction(options.onData)) {
+            delete options.onData;
+        }
+
+        if ( options.enabled === undefined ) {
+            options.enabled = !!(options.onData);
+        }
+
+        return options;
+
+    }
+
+    /**
+     *
+     * @param      stream { stream.Readable }
+     * @param     options { {[enabled]: boolean, [onData]: function, [encoding]: string} }
+     * @param handleError { Function }
+     * @param       cache { Object }
+     * @param    cacheKey { string }
+     */
+    static _setupStreamReader ({stream, options, handleError, cache, cacheKey }) {
+
+        cache[cacheKey] = undefined;
+
+        if (options.enabled) {
+
+            if (options.encoding !== undefined) {
+                stream.setEncoding(options.encoding);
+            }
+
+            if (options.onData) {
+
+                stream.on('data', data => {
+                    LogicUtils.tryCatch( () => options.onData(data), handleError);
+                });
+
+            } else {
+
+                cache[cacheKey] = '';
+
+                stream.on('data', data => {
+                    cache[cacheKey] += data;
+                });
+
+            }
+
+        }
+
     }
 
 }
