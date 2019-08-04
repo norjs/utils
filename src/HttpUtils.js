@@ -9,6 +9,12 @@ const LogicUtils = require('./LogicUtils.js');
 
 /**
  *
+ * @type {typeof StringUtils}
+ */
+const StringUtils = require('./StringUtils.js');
+
+/**
+ *
  * @type {typeof HttpError}
  */
 const HttpError = require('./HttpError.js');
@@ -27,13 +33,55 @@ class HttpUtils {
     }
 
     /**
+     * This detects values like `"port"` or `port`.
      *
      * @param value {string|number}
      * @return {boolean}
      */
     static isPort (value) {
-        if (_.isNumber(value)) return true;
-        return _.isString(value) && /^[0-9]+/.test(value);
+
+        if (_.isNumber(value)) {
+            return true;
+        }
+
+        if (!_.isString(value)) {
+            return false;
+        }
+
+        if (value.startsWith('http://localhost:')) {
+            return true;
+        }
+
+        return /^[0-9]+/.test(value);
+
+    }
+
+    /**
+     * This detects values like `"[http://]hostname:port"` or `"[http://]hostname"` where port would be 80
+     *
+     * @param value {string}
+     * @return {boolean}
+     */
+    static isHostPort (value) {
+
+        if (!_.isString(value)) {
+            return false;
+        }
+
+        if (value.startsWith('http://')) {
+            return true;
+        }
+
+        if (value.length === 0) {
+            return false;
+        }
+
+        if (/^[0-9]+$/.test(value)) {
+            return false;
+        }
+
+        return /^[a-zA-Z0-9]/.test(value);
+
     }
 
     /**
@@ -42,7 +90,40 @@ class HttpUtils {
      * @return {boolean}
      */
     static isSocket (value) {
-        return _.isString(value) && value.length >= 1 && value[0] === '.';
+
+        if (!_.isString(value)) {
+            return false;
+        }
+
+        if (value.startsWith('socket://')) {
+            return true;
+        }
+
+        return value.length >= 1 && value[0] === '.';
+    }
+
+    /**
+     *
+     * @param value {string}
+     * @return {string}
+     */
+    static getHost (value) {
+
+        if (!_.isString(value)) {
+            throw new TypeError(`HttpUtils.getPort(value): Not a string: "${value}"`);
+        }
+
+        if (value.startsWith('http://')) {
+            value = value.substr('http://'.length);
+        }
+
+        const i = value.indexOf(':');
+        if (i >= 0) {
+            return value.substr(0, i) || 'localhost';
+        } else {
+            return value || 'localhost';
+        }
+
     }
 
     /**
@@ -60,18 +141,36 @@ class HttpUtils {
             throw new TypeError(`HttpUtils.getPort(value): Not a string: "${value}"`);
         }
 
-        return parseInt(value, 10);
+        if (value.startsWith('http://')) {
+            value = value.substr('http://'.length);
+        }
+
+        const i = value.indexOf(':');
+        if (i >= 0) {
+            value = value.substr(i+1);
+        }
+
+        if (/^[0-9]+$/.test(value)) {
+            return StringUtils.parseInteger(value);
+        } else {
+            return 80;
+        }
+
     }
 
     /**
      *
      * @param value {string}
-     * @return {number}
+     * @return {string}
      */
     static getSocket (value) {
 
         if (!_.isString(value)) {
             throw new TypeError(`HttpUtils.getSocket(value): Not a string: "${value}"`);
+        }
+
+        if (value.startsWith('socket://')) {
+            return value.substr('socket://'.length);
         }
 
         return value;
@@ -84,7 +183,7 @@ class HttpUtils {
      * @return {string}
      */
     static getPortLabel (value) {
-        return `localhost:${value}`;
+        return `http://localhost:${value}`;
     }
 
     /**
@@ -94,7 +193,7 @@ class HttpUtils {
      * @return {string}
      */
     static getSocketLabel (value) {
-        return `socket:${value}`;
+        return `socket://${value}`;
     }
 
     /**
@@ -388,6 +487,36 @@ class HttpUtils {
             } else {
                 return JSON.parse(dataString);
             }
+        });
+    }
+
+    /**
+     *
+     * @param req {HttpRequestObject}
+     * @param clientReq {HttpResponseObject|HttpClientRequestObject}
+     * @param encoding {string} If chunk in 'data' event is a string, this will be used as the encoding.
+     * @returns {Promise}
+     */
+    static proxyDataTo (req, clientReq, {
+        encoding = 'utf8'
+    } = {}) {
+        return new Promise( (resolve, reject) => {
+
+            req.on('data', (chunk) => {
+                LogicUtils.tryCatch( () => {
+
+                    if (_.isString(chunk)) {
+                        clientReq.write(chunk, encoding);
+                    } else {
+                        clientReq.write(chunk);
+                    }
+
+                // FIXME: If an error happens, we should remove the 'end' listener?
+                }, reject);
+            });
+
+            req.on('end', () => { resolve(); });
+
         });
     }
 
