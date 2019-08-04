@@ -223,6 +223,11 @@ class HttpUtils {
      */
     static listen (server, value, callback) {
 
+        if ( HttpUtils.isHostPort(value) ) {
+            server.listen(HttpUtils.getPort(value), HttpUtils.getHost(value), callback);
+            return;
+        }
+
         if ( HttpUtils.isPort(value) ) {
             server.listen(HttpUtils.getPort(value), "localhost", callback);
             return;
