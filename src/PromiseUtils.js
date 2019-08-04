@@ -8,7 +8,6 @@ class PromiseUtils {
      *
      * @param value {Promise|*}
      * @returns {Promise}
-     * @private
      */
     static when (value) {
 
