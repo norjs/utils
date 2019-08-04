@@ -22,7 +22,7 @@ class HttpUtils {
      *
      * @returns {typeof HttpError}
      */
-    get HttpError () {
+    static get HttpError () {
         return HttpError;
     }
 
