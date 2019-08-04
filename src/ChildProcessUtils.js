@@ -8,7 +8,116 @@ const LogicUtils = require('./LogicUtils.js');
 /**
  *
  */
+class NorChildProcess {
+
+    /**
+     *
+     * @param childProcess {ChildProcessWithoutNullStreams}
+     */
+    constructor (childProcess) {
+
+        /**
+         * @member {ChildProcessWithoutNullStreams}
+         */
+        this._childProcess = childProcess;
+
+        /**
+         * @member {number}
+         */
+        this._pid = childProcess ? childProcess.pid : undefined;
+
+        /**
+         * This is a promise for `this._result`.
+         *
+         * @member {Promise|undefined}
+         * @private
+         */
+        this._resultPromise = undefined;
+
+        /**
+         *
+         * @member {Object|undefined}
+         * @private
+         */
+        this._result = undefined;
+
+    }
+
+    /**
+     *
+     * @returns {ChildProcessWithoutNullStreams}
+     * @constructor
+     */
+    get childProcess () {
+        return this._childProcess;
+    }
+
+    /**
+     *
+     * @returns {number}
+     */
+    get pid () {
+        return this._pid;
+    }
+
+    /**
+     *
+     * @returns {Promise|undefined}
+     */
+    get resultPromise () {
+
+        if (this._result) {
+            if (this._result.status === 0) {
+                return Promise.resolve(this._result);
+            } else {
+                return Promise.reject(this._result);
+            }
+        }
+
+        return this._resultPromise;
+    }
+
+    /**
+     *
+     * @returns {Object|undefined}
+     */
+    get result () {
+        return this._result;
+    }
+
+    /**
+     * Setup a promise to wait for process end, and to set `this.result`
+     *
+     * @param promise {Promise}
+     */
+    setResultPromise (promise) {
+
+        this._resultPromise = promise.then(result => {
+            this._result = result;
+            return result;
+        }, err => {
+            this._result = err;
+            return Promise.reject(err);
+        }).finally(() => {
+            this._resultPromise = undefined;
+        });
+
+    }
+
+}
+
+/**
+ *
+ */
 class ChildProcessUtils {
+
+    /**
+     *
+     * @returns {typeof NorChildProcess}
+     */
+    static get ChildProcess () {
+        return NorChildProcess;
+    }
 
     /**
      * Execute a command as a child process.
@@ -27,7 +136,7 @@ class ChildProcessUtils {
      * @param stderr { boolean | Function | {[enabled]: boolean, [onData]: function, [encoding]: string} }
      * @param unrefEnabled {boolean}
      * @param disconnectEnabled {boolean}
-     * @return {Promise.<{childProcess: ChildProcess, status: number, stdout: string, stderr: string, error: *}>} Rejected promises will also have .childProcess set.
+     * @return {NorChildProcess}
      */
     static execute (
         command,
@@ -75,75 +184,92 @@ class ChildProcessUtils {
          */
         const proc = CHILD_PROCESS.spawn(command, args, options);
 
-        const promise = new Promise( (resolve, reject) => {
+        const child = new NorChildProcess(proc);
+
+        if ( options.detached && unrefEnabled ) {
+
+            if ( disconnectEnabled && proc.connected ) {
+                proc.disconnect();
+            }
+
+            if ( unrefEnabled ) {
+                proc.unref();
+            }
+
+        } else {
+
+            /**
+             *
+             * @type {Promise}
+             */
+            child.setResultPromise(
+                ChildProcessUtils.waitResults(proc, {stdout, stderr}).finally( () => {
+
+                    if ( disconnectEnabled && proc.connected ) {
+                        proc.disconnect();
+                    }
+
+                    if ( unrefEnabled ) {
+                        proc.unref();
+                    }
+
+                })
+            );
+
+        }
+
+        return child;
+
+    }
+
+    /**
+     *
+     * @param proc {ChildProcessWithoutNullStreams}
+     * @param stdout { {[enabled]: boolean, [onData]: function, [encoding]: string} }
+     * @param stderr { {[enabled]: boolean, [onData]: function, [encoding]: string} }
+     * @return {Promise.<{status: number, stdout: string, stderr: string, error: *}>}
+     */
+    static waitResults (proc, {stdout, stderr}) {
+        return new Promise( (resolve, reject) => {
 
             const handleError = err => {
-                err.childProcess = proc;
                 reject( err );
             };
 
             LogicUtils.tryCatch( () => {
 
-                // If command started detached and unref enabled; not waiting for it to finish.
-                if ( options.detached && unrefEnabled ) {
+                let cache = {};
 
-                    resolve({childProcess: proc});
+                ChildProcessUtils._setupStreamReader({
+                    stream: proc.stdout,
+                    options: stdout,
+                    handleError,
+                    cache,
+                    cacheKey: 'stdout'
+                });
 
-                // Handle exit
-                } else {
+                ChildProcessUtils._setupStreamReader({
+                    stream: proc.stderr,
+                    options: stderr,
+                    handleError,
+                    cache,
+                    cacheKey: 'stderr'
+                });
 
-                    let cache = {};
+                proc.on('close', retval => {
+                    if (retval === 0) {
+                        resolve({status: retval, stdout: cache.stdout, stderr: cache.stderr});
+                    } else {
+                        reject({status: retval, stdout: cache.stdout, stderr: cache.stderr});
+                    }
+                });
 
-                    ChildProcessUtils._setupStreamReader({
-                        stream: proc.stdout,
-                        options: stdout,
-                        handleError,
-                        cache,
-                        cacheKey: 'stdout'
-                    });
+                // Handle error
+                proc.on('error', handleError);
 
-                    ChildProcessUtils._setupStreamReader({
-                        stream: proc.stderr,
-                        options: stderr,
-                        handleError,
-                        cache,
-                        cacheKey: 'stderr'
-                    });
-
-                    proc.on('close', retval => {
-                        if (retval === 0) {
-                            resolve({childProcess: proc, status: retval, stdout: cache.stdout, stderr: cache.stderr});
-                        } else {
-                            reject({childProcess: proc, status: retval, stdout: cache.stdout, stderr: cache.stderr});
-                        }
-                    });
-
-                    // Handle error
-                    proc.on('error', err => {
-                        err.childProcess = proc;
-                        reject( err );
-                    });
-
-                }
-
-                if ( disconnectEnabled && proc.connected ) {
-                    proc.disconnect();
-                }
-
-                if ( unrefEnabled ) {
-                    proc.unref();
-                }
-
-            }, err => {
-                err.childProcess = proc;
-                reject(err );
-            });
+            }, handleError);
 
         });
-
-        promise.CHILD = proc;
-
-        return promise;
     }
 
     /**
