@@ -20,6 +20,17 @@ class StringUtils {
         }
     }
 
+    /**
+     * Parse a string argument to an integer
+     *
+     * @param value {string|undefined}
+     * @returns {number|undefined}
+     */
+    static parseInteger (value) {
+        if (value === undefined) return undefined;
+        return parseInt(value, 10);
+    }
+
 }
 
 // Exports
