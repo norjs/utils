@@ -99,7 +99,8 @@ class HttpUtils {
             return true;
         }
 
-        return value.length >= 1 && value[0] === '.';
+        return value.length >= 1 && (value[0] === '.' || value[0] === '/');
+
     }
 
     /**
