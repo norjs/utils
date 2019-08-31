@@ -106,6 +106,18 @@ class HttpUtils {
     /**
      *
      * @param value {string}
+     * @param type {string}
+     * @return {boolean}
+     */
+    static isProto (value, type) {
+
+        return _.isString(value) ? value.startsWith(`${type}://`) : false;
+
+    }
+
+    /**
+     *
+     * @param value {string}
      * @return {string}
      */
     static getHost (value) {
@@ -171,10 +183,36 @@ class HttpUtils {
         }
 
         if (value.startsWith('socket://')) {
-            return value.substr('socket://'.length);
+            value = value.substr('socket://'.length);
         }
 
         return value;
+    }
+
+    /**
+     *
+     * @param value {string}
+     * @param type {string}
+     * @return {string}
+     */
+    static getProtoValue (value, type) {
+
+        if (!_.isString(type)) {
+            throw new TypeError(`HttpUtils.getProto(value, type): type not a string: "${type}"`);
+        }
+
+        const prefix = `${type}://`;
+
+        if (!_.isString(value)) {
+            throw new TypeError(`HttpUtils.getProto(value, "${type}"): value not a string: "${value}"`);
+        }
+
+        if (!value.startsWith(prefix)) {
+            throw new TypeError(`Not a ${type} url: "${value}"`);
+        }
+
+        return value.substr(prefix.length);
+
     }
 
     /**
@@ -245,6 +283,43 @@ class HttpUtils {
 
     /**
      *
+     * @param req
+     * @param res
+     * @param err
+     */
+    static handleError (req, res, err) {
+
+        LogicUtils.tryCatch(
+            () => {
+
+                if (err instanceof HttpError) {
+                    HttpUtils.writeErrorJson(res, err.message, err.code, err.headers);
+                    return;
+                }
+
+                if (err && err.stack) {
+                    console.error('Error: ' + err.stack);
+                } else {
+                    console.error('Error: ' + err);
+                }
+
+                if (!res.headersSent) {
+                    HttpUtils.writeErrorJson(res, "Exception", 500);
+                } else {
+                    res.end();
+                }
+
+            },
+            err => {
+                console.error('ERROR in error handler: ', err);
+                res.end();
+            }
+        );
+
+    }
+
+    /**
+     *
      * @param http {HttpServerModule}
      * @param onRequest {Function|function} The callback takes (request, response) as params
      * @returns {HttpServerObject}
@@ -256,34 +331,7 @@ class HttpUtils {
             (req, res) => {
 
                 const handleError = (err) => {
-
-                    LogicUtils.tryCatch(
-                        () => {
-
-                            if (err instanceof HttpError) {
-                                HttpUtils.writeErrorJson(res, err.message, err.code, err.headers);
-                                return;
-                            }
-
-                            if (err && err.stack) {
-                                console.error('Error: ' + err.stack);
-                            } else {
-                                console.error('Error: ' + err);
-                            }
-
-                            if (!res.headersSent) {
-                                HttpUtils.writeErrorJson(res, "Exception", 500);
-                            } else {
-                                res.end();
-                            }
-
-                        },
-                        err => {
-                            console.error('ERROR in error handler: ', err);
-                            res.end();
-                        }
-                    );
-
+                    HttpUtils.handleError(req, res, err);
                 };
 
                 LogicUtils.tryCatch(
@@ -498,30 +546,30 @@ class HttpUtils {
 
     /**
      *
-     * @param req {HttpRequestObject}
-     * @param clientReq {HttpResponseObject|HttpClientRequestObject}
+     * @param fromRequest { HttpRequestObject | HttpClientResponseObject }
+     * @param toRequest { HttpResponseObject | HttpClientRequestObject }
      * @param encoding {string} If chunk in 'data' event is a string, this will be used as the encoding.
      * @returns {Promise}
      */
-    static proxyDataTo (req, clientReq, {
+    static proxyDataTo (fromRequest, toRequest, {
         encoding = 'utf8'
     } = {}) {
         return new Promise( (resolve, reject) => {
 
-            req.on('data', (chunk) => {
+            fromRequest.on('data', (chunk) => {
                 LogicUtils.tryCatch( () => {
 
                     if (_.isString(chunk)) {
-                        clientReq.write(chunk, encoding);
+                        toRequest.write(chunk, encoding);
                     } else {
-                        clientReq.write(chunk);
+                        toRequest.write(chunk);
                     }
 
                 // FIXME: If an error happens, we should remove the 'end' listener?
                 }, reject);
             });
 
-            req.on('end', () => { resolve(); });
+            fromRequest.on('end', () => { resolve(); });
 
         });
     }
