@@ -126,16 +126,116 @@ class HttpUtils {
             throw new TypeError(`HttpUtils.getPort(value): Not a string: "${value}"`);
         }
 
-        if (value.startsWith('http://')) {
-            value = value.substr('http://'.length);
+        // Remove possible 'ANY://'
+        let i = value.indexOf('://');
+        if (i >= 0) {
+            value = value.substr(i + 3);
         }
 
-        const i = value.indexOf(':');
+        // Get until next ':', if exists
+        i = value.indexOf(':');
         if (i >= 0) {
             return value.substr(0, i) || 'localhost';
-        } else {
-            return value || 'localhost';
         }
+
+        // Get until next '/', if exists
+        i = value.indexOf('/');
+        if (i >= 0) {
+            return value.substr(0, i) || 'localhost';
+        }
+
+        return value || 'localhost';
+
+    }
+
+    /**
+     *
+     * @param value {string}
+     * @return {HttpClientOptionsObject}
+     */
+    static parseOptionsFromURL (value) {
+
+        if (!_.isString(value)) {
+            throw new TypeError(`HttpUtils.parseUrl(value): Not a string: "${value}"`);
+        }
+
+        let options = {};
+
+        // Parse protocol 'ANY://'
+        let i = value.indexOf('://');
+        if (i >= 0) {
+
+            const protocol = options.protocol = value.substr(0, i+1);
+
+            value = value.substr(i + 3);
+
+            if (protocol === 'socket:') {
+                options.socketPath = value;
+                return options;
+            }
+
+            if ( ! ( (protocol === 'http:') || (protocol === 'https:') ) ) {
+                throw new TypeError(`HttpUtils.parseOptionsFromURL(value): Unsupported protocol: "${protocol}"`);
+            }
+
+        }
+
+        // Parse until next ':', if any
+        i = value.indexOf(':');
+        if (i >= 0) {
+
+            options.host = value.substr(0, i);
+
+            value = value.substr(i + 1);
+
+            // Remove until next '/', if any
+            i = value.indexOf('/');
+            if (i >= 0) {
+                options.port = StringUtils.strictParseInteger( value.substr(0, i) );
+                value = value.substr(i);
+            } else {
+                options.port = StringUtils.strictParseInteger( value );
+                value = undefined;
+            }
+
+        } else {
+
+            // Remove until next '/', if any
+            i = value.indexOf('/');
+            if (i >= 0) {
+                options.host = value.substr(0, i);
+                value = value.substr(i);
+            } else {
+                options.host = value;
+                value = undefined;
+            }
+
+        }
+
+        options.path = value;
+
+        return options;
+
+    }
+
+    /**
+     *
+     * @param value {string}
+     * @return {string}
+     */
+    static getProtocol (value) {
+
+        if (!_.isString(value)) {
+            throw new TypeError(`HttpUtils.getProto(value): Not a string: "${value}"`);
+        }
+
+        // Parse 'ANY://', if exists
+        const i = value.indexOf('://');
+        if (i >= 0) {
+            return value.substr(0,i + 1);
+        }
+
+        return 'http:';
 
     }
 
@@ -154,17 +254,20 @@ class HttpUtils {
             throw new TypeError(`HttpUtils.getPort(value): Not a string: "${value}"`);
         }
 
-        if (value.startsWith('http://')) {
-            value = value.substr('http://'.length);
+        // Remove possible 'ANY://'
+        let i = value.indexOf('://');
+        if (i >= 0) {
+            value = value.substr(i + 3);
         }
 
-        const i = value.indexOf(':');
+        // Remove until next ':', if any
+        i = value.indexOf(':');
         if (i >= 0) {
             value = value.substr(i+1);
         }
 
-        if (/^[0-9]+$/.test(value)) {
-            return StringUtils.parseInteger(value);
+        if (StringUtils.isInteger(value)) {
+            return StringUtils.strictParseInteger(value);
         } else {
             return 80;
         }
@@ -572,6 +675,45 @@ class HttpUtils {
             fromRequest.on('end', () => { resolve(); });
 
         });
+    }
+
+    /**
+     *
+     * @param options {string|Object}
+     * @returns {HttpClientOptionsObject}
+     */
+    static parseClientOptions (options) {
+
+        if (_.isObject(options)) {
+            return options;
+        }
+
+        if (!_.isString(options)) {
+            throw new TypeError(`HttpUtils.parseOptions(options): illegal value: ${options}`);
+        }
+
+        if ( HttpUtils.isHostPort(options) ) {
+            return {
+                host: HttpUtils.getHost(options),
+                port: HttpUtils.getPort(options)
+            };
+        }
+
+        if ( HttpUtils.isPort(options) ) {
+            return {
+                host: "localhost",
+                port: HttpUtils.getPort(options)
+            };
+        }
+
+        if ( HttpUtils.isSocket(options) ) {
+            return {
+                socketFile: HttpUtils.getSocket(options)
+            };
+        }
+
+        throw new TypeError(`Unsupported configuration string: "${options}"`);
+
     }
 
 }

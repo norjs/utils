@@ -3,9 +3,21 @@ const _ = require('lodash');
 
 /**
  *
+ * @type {typeof LogUtils}
+ */
+const LogUtils = require('./LogUtils.js');
+
+/**
+ *
  * @type {typeof LogicUtils}
  */
 const LogicUtils = require('./LogicUtils.js');
+
+/**
+ *
+ * @type {typeof HttpUtils}
+ */
+const HttpUtils = require('./HttpUtils.js');
 
 /**
  *
@@ -41,10 +53,13 @@ class PtthUtils {
     }
 
     /**
+     * Creates a HTTP request using an existing socket.
+     *
+     * Same syntax as in `http.request(options, callback)`, except you can provide a socket.
      *
      * @param http
      * @param socket
-     * @param options
+     * @param options { string | HttpClientOptionsObject }
      * @param callback {Function}
      * @returns {*}
      */
@@ -53,6 +68,14 @@ class PtthUtils {
         if (!http) throw new TypeError(`PtthUtils.request(http, socket): Http invalid: ${http}`);
 
         if (!socket) throw new TypeError(`PtthUtils.request(http, socket): Socket invalid: ${socket}`);
+
+        if (!options) throw new TypeError(`PtthUtils.connect(): options was not defined: ${options}`);
+
+        if (!_.isFunction(callback)) throw new TypeError(`PtthUtils.connect(): callback was not a function: ${callback}`);
+
+        if (_.isString(options)) {
+            options = HttpUtils.parseOptionsFromURL(options);
+        }
 
         const myOptions = _.merge({
             createConnection: () => socket,
@@ -73,7 +96,7 @@ class PtthUtils {
      */
     static onSocketAlreadyCreatedError (request, socket, head) {
 
-        console.error(`ERROR: The socket was already created.`);
+        console.error(LogUtils.getLine(`ERROR: The socket was already created.`));
 
         socket.end('HTTP/1.1 500 Internal Error');
 
@@ -103,7 +126,10 @@ class PtthUtils {
      */
     static onSwitchingProtocols (request, socket, head) {
 
-        console.log(`Upgrade request "${ request.method }" "${ request.url }": Switching Protocols to PTTH/1.0`);
+        console.log(LogUtils.getLine(`"${ request.method } ${ request.url }": Switching Protocols to PTTH/1.0`));
+
+        // noinspection JSUnresolvedFunction
+        socket.setKeepAlive(true);
 
         socket.write('HTTP/1.1 101 Switching Protocols\r\n' +
             'Upgrade: PTTH/1.0\r\n' +
@@ -116,6 +142,7 @@ class PtthUtils {
      *
      * @param request
      * @param socket
+     * @param head
      * @param err
      */
     static handleError (request, socket, head, err) {
@@ -132,9 +159,9 @@ class PtthUtils {
                 }
 
                 if (err && err.stack) {
-                    console.error('Error: ' + err.stack);
+                    console.error(LogUtils.getLine('Error: ' + err.stack));
                 } else {
-                    console.error('Error: ' + err);
+                    console.error(LogUtils.getLine('Error: ' + err));
                 }
 
                 replySent = true;
@@ -142,12 +169,98 @@ class PtthUtils {
 
             },
             err => {
-                console.error('ERROR in error handler: ', err);
+                console.error(LogUtils.getLine('ERROR in error handler: '), err);
                 if (!replySent) {
                     socket.end(`HTTP/1.1 500 Internal Server Error`);
                 }
             }
         );
+
+    }
+
+    /**
+     * Connects to a remote server and start a connection upgrade for reversed HTTP (PTTH/1.0), eg. reversing the HTTP
+     * direction, so that the client will be the server, and server can be a client.
+     *
+     * @param http
+     * @param options {string|object}
+     * @param onUpgrade { function(response, socket, head): T }
+     * @returns {Promise.<T>} The promise will return the return value from onUpgrade() attribute
+     * @template T
+     */
+    static connect (http, options, onUpgrade) {
+
+        if (!http) throw new TypeError(`PtthUtils.connect(): http was not defined: ${http}`);
+
+        if (!options) throw new TypeError(`PtthUtils.connect(): options was not defined: ${options}`);
+
+        if (_.isString(options)) {
+            options = HttpUtils.parseOptionsFromURL(options);
+        }
+
+        if (!_.isFunction(onUpgrade)) throw new TypeError(`PtthUtils.connect(): onUpgrade was not a function: ${onUpgrade}`);
+
+        return new Promise( (resolve, reject) => {
+
+            LogicUtils.tryCatch(
+                () => {
+
+                    const requestOptions = _.merge({
+                        headers: {
+                            'Connection': 'Upgrade',
+                            'Upgrade': 'PTTH/1.0'
+                        },
+                        timeout: 0
+                    }, options);
+
+                    const request = http.request(requestOptions);
+
+                    request.on('error', err => reject(err));
+
+                    request.on('upgrade', (response, socket, upgradeHead) => {
+                        LogicUtils.tryCatch(() => {
+                            resolve( onUpgrade(response, socket, upgradeHead) );
+                        }, err => reject(err));
+                    });
+
+                    request.end();
+
+                },
+                err => reject(err)
+            );
+
+        });
+
+    }
+
+    /**
+     * Handles connection upgrade to a HTTP server after successful client request.
+     *
+     * @param http
+     * @param response
+     * @param socket
+     * @param upgradeHead
+     * @param server
+     */
+    static onClientUpgrade (http, server, response, socket, upgradeHead) {
+
+        socket.setKeepAlive(true);
+
+        PtthUtils.connectSocketToServer(server, socket);
+
+    }
+
+    /**
+     *
+     * @param server
+     * @param socket
+     * @fixme Figure out a public API to do the same thing, https://stackoverflow.com/questions/57735842/how-to-use-existing-socket-for-a-nodejs-http-server
+     */
+    static connectSocketToServer (server, socket) {
+
+        server._socket = socket;
+
+        server.emit('connection', server._socket);
 
     }
 
