@@ -668,7 +668,7 @@ class HttpUtils {
                         toRequest.write(chunk);
                     }
 
-                // FIXME: If an error happens, we should remove the 'end' listener?
+                // FIXME: If an error happens, we should remove the 'end' listener? See https://github.com/norjs/utils/issues/3
                 }, reject);
             });
 

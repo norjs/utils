@@ -254,7 +254,7 @@ class PtthUtils {
      *
      * @param server
      * @param socket
-     * @fixme Figure out a public API to do the same thing, https://stackoverflow.com/questions/57735842/how-to-use-existing-socket-for-a-nodejs-http-server
+     * @fixme Figure out a public API to do the same thing, see https://github.com/norjs/utils/issues/2
      */
     static connectSocketToServer (server, socket) {
 

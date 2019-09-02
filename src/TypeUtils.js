@@ -343,7 +343,7 @@ class TypeUtils {
             }
             if ( _.startsWith(rest, "<") && _.endsWith(rest, '>') ) {
                 rest = _.trim(rest.substr(1, rest.length - 2));
-                // FIXME: Should we assert something that's asynchronous?
+                // FIXME: Should we assert something that's asynchronous? See https://github.com/norjs/utils/issues/4
                 console.warn(`Tried to assert a promise with asynchronous result type "${rest}", which is ignored.`);
                 return this._compileTestFunction("Promise");
             }
