@@ -61,11 +61,15 @@ class ProcessUtils {
      * @param err {*}
      */
     static handleError (err) {
+
         console.error(`Exception: "${err}"`);
+
         if (err.stack) {
             console.error(err.stack);
         }
+
         process.exit(1);
+
     }
 
 }

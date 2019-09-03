@@ -716,6 +716,17 @@ class HttpUtils {
 
     }
 
+    /**
+     * Get request query parameters.
+     *
+     * @params {*} url
+     * @params {HttpRequestObject} request
+     * @returns {{}}
+     */
+    static getParams (url, request) {
+        return url.parse(request.url, true).query;
+    }
+
 }
 
 // Exports

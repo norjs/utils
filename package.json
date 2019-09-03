@@ -1,6 +1,6 @@
 {
   "name": "@norjs/utils",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Common utils for ES6 and Node.js",
   "main": "index.js",
   "dependencies": {
