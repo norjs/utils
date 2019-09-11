@@ -513,7 +513,15 @@ class HttpUtils {
      * @returns {string}
      */
     static getUrl (req) {
-        return _.replace(`${req.url}/`, /\/+$/, "/");
+
+        let url = req.url;
+
+        const paramsStartIndex = url.indexOf('?');
+        if (paramsStartIndex >= 0) {
+            url = url.substr(0, paramsStartIndex);
+        }
+
+        return _.replace(`${url}/`, /\/+$/, "/");
     }
 
     /**
