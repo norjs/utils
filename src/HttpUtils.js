@@ -522,6 +522,7 @@ class HttpUtils {
         }
 
         return _.replace(`${url}/`, /\/+$/, "/");
+
     }
 
     /**
