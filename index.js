@@ -1,20 +1,14 @@
-/**
- * @type {typeof LogicUtils}
- */
-const Logic = require('./Logic');
-
-/**
- * @type {typeof TypeUtils}
- */
-const Type = require('./Type');
-
-/**
- *
- * @type {{Type: typeof TypeUtils, LogicUtils: typeof LogicUtils, Logic: typeof LogicUtils, TypeUtils: typeof TypeUtils}}
- */
-module.exports = {
-    LogicUtils: Logic,
-    TypeUtils: Type,
-    Logic,
-    Type
-};
+export * from './Boolean';
+export * from './ChildProcess';
+export * from './Error';
+export * from './File';
+export * from './Http';
+export * from './HttpError';
+export * from './Log';
+export * from './Logic';
+export * from './Process';
+export * from './Promise';
+export * from './Ptth';
+export * from './Service';
+export * from './String';
+export * from './Type';

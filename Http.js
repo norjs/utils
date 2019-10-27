@@ -1,1 +1,2 @@
-module.exports = require('./src/HttpUtils.js');
+export * from './src/HttpUtils.js';
+export {default} from './src/HttpUtils.js';

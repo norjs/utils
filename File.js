@@ -1,1 +1,2 @@
-module.exports = require('./src/FileUtils.js');
+export * from './src/FileUtils.js';
+export {default} from './src/FileUtils.js';

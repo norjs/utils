@@ -1,1 +1,2 @@
-module.exports = require('./src/PromiseUtils.js');
+export * from './src/PromiseUtils.js';
+export {default} from './src/PromiseUtils.js';

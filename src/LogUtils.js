@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import {Logger} from "./Logger";
 
 /**
@@ -32,6 +33,10 @@ export class LogUtils {
             return "undefined";
         }
 
+        if (_.isString(value)) {
+            return value;
+        }
+
         if (_.isNull(value)) {
             return "null";
         }
@@ -50,7 +55,7 @@ export class LogUtils {
      * @return {string}
      */
     static getArrayAsString (args) {
-        return _.map(args, arg => LogUtils.getAsString(arg)).join(' ');
+        return _.map(args, arg => _.trim(LogUtils.getAsString(arg))).join(' ');
     }
 
     /**

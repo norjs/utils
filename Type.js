@@ -1,1 +1,2 @@
-module.exports = require('./src/TypeUtils.js');
+export * from './src/TypeUtils.js';
+export {default} from './src/TypeUtils.js';

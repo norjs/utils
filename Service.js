@@ -1,1 +1,2 @@
-module.exports = require('./src/ServiceUtils.js');
+export * from './src/ServiceUtils.js';
+export {default} from './src/ServiceUtils.js';

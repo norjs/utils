@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import HTTP from 'http';
 
 /** User definable object for codes
  *
@@ -41,7 +42,7 @@ export class HTTPError extends Error {
         });
 
         code = code || 500;
-        msg = msg || (''+code+' '+require('http').STATUS_CODES[code]);
+        msg = msg || (''+code+' '+HTTP.STATUS_CODES[code]);
         headers = headers || {};
 
         super();

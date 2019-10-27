@@ -1,1 +1,2 @@
-module.exports = require('./src/ChildProcessUtils.js');
+export * from './src/ChildProcessUtils.js';
+export {default} from './src/ChildProcessUtils.js';

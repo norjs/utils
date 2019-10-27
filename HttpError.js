@@ -1,1 +1,2 @@
-module.exports = require('./src/HttpError.js');
+export * from './src/HttpError.js';
+export {default} from './src/HttpError.js';

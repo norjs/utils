@@ -1,1 +1,2 @@
-module.exports = require('./src/ErrorUtils.js');
+export * from './src/ErrorUtils.js';
+export {default} from './src/ErrorUtils.js';

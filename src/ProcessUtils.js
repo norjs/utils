@@ -65,4 +65,4 @@ export class ProcessUtils {
 }
 
 // Exports
-module.exports = ProcessUtils;
+export default ProcessUtils;
