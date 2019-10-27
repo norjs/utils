@@ -1,28 +1,12 @@
-
-const _ = require('lodash');
-
-/**
- *
- * @type {typeof LogicUtils}
- */
-const LogicUtils = require('./LogicUtils.js');
-
-/**
- *
- * @type {typeof StringUtils}
- */
-const StringUtils = require('./StringUtils.js');
-
-/**
- *
- * @type {typeof HttpError}
- */
-const HttpError = require('./HttpError.js');
+import _ from 'lodash';
+import LogicUtils from './LogicUtils.js';
+import StringUtils from './StringUtils.js';
+import HttpError from './HttpError.js';
 
 /**
  *
  */
-class HttpUtils {
+export class HttpUtils {
 
     /**
      *
@@ -739,4 +723,4 @@ class HttpUtils {
 }
 
 // Exports
-module.exports = HttpUtils;
+export default HttpUtils;

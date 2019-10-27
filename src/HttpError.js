@@ -1,5 +1,4 @@
-
-const _ = require('lodash');
+import _ from 'lodash';
 
 /** User definable object for codes
  *
@@ -18,7 +17,7 @@ const CODES = {};
  * The order of arguments is not important; type is.
  *
  */
-class HTTPError extends Error {
+export class HTTPError extends Error {
 
     /**
      *
@@ -87,4 +86,4 @@ class HTTPError extends Error {
 }
 
 // Exports
-module.exports = HTTPError;
+export default HTTPError;

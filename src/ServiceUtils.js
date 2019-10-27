@@ -2,10 +2,10 @@
 /**
  *
  */
-class ServiceUtils {
+export class ServiceUtils {
 
 
 }
 
 // Exports
-module.exports = ServiceUtils;
+export default ServiceUtils;

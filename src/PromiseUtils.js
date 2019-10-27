@@ -2,7 +2,7 @@
 /**
  *
  */
-class PromiseUtils {
+export class PromiseUtils {
 
     /**
      * Returns true if value is a promise.
@@ -31,4 +31,4 @@ class PromiseUtils {
 }
 
 // Exports
-module.exports = PromiseUtils;
+export default PromiseUtils;

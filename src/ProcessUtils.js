@@ -1,20 +1,10 @@
-
-/**
- *
- * @type {typeof LogicUtils}
- */
-const LogicUtils = require('./LogicUtils.js');
-
-/**
- *
- * @type {PathModule}
- */
-const PATH = require('path');
+import LogicUtils from './LogicUtils.js';
+import PATH from 'path';
 
 /**
  *
  */
-class ProcessUtils {
+export class ProcessUtils {
 
     /**
      *

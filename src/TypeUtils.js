@@ -1,10 +1,5 @@
-const _ = require('lodash');
-
-/**
- *
- * @type {typeof LogicUtils}
- */
-const LogicUtils = require('./LogicUtils.js');
+import _ from 'lodash';
+import LogicUtils from './LogicUtils.js';
 
 /**
  * @typedef {object} TestResult
@@ -78,7 +73,7 @@ const OPTIONS = {};
 /**
  * Runtime JSDoc style type checking.
  */
-class TypeUtils {
+export class TypeUtils {
 
     /**
      * Tests if a value matches type criteria.
@@ -817,4 +812,4 @@ class TypeUtils {
  *
  * @type {typeof TypeUtils}
  */
-module.exports = TypeUtils;
+export default TypeUtils;

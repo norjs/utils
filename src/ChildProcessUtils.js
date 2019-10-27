@@ -1,14 +1,11 @@
-
-const _ = require('lodash');
-
-const CHILD_PROCESS = require('child_process');
-
-const LogicUtils = require('./LogicUtils.js');
+import _ from 'lodash';
+import CHILD_PROCESS from 'child_process';
+import LogicUtils from './LogicUtils.js';
 
 /**
  *
  */
-class NorChildProcess {
+export class NorChildProcess {
 
     /**
      *
@@ -349,5 +346,4 @@ class ChildProcessUtils {
 
 }
 
-// Exports
-module.exports = ChildProcessUtils;
+export default ChildProcessUtils;

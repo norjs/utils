@@ -1,9 +1,9 @@
-const _ = require('lodash');
+import _ from 'lodash';
 
 /**
  *
  */
-class StringUtils {
+export class StringUtils {
 
     /**
      * Parse a string argument to boolean
@@ -96,4 +96,4 @@ class StringUtils {
 }
 
 // Exports
-module.exports = StringUtils;
+export default StringUtils;

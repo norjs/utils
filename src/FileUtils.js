@@ -1,10 +1,9 @@
-
-const LogicUtils = require('./LogicUtils.js');
+import LogicUtils from './LogicUtils.js';
 
 /**
  *
  */
-class FileUtils {
+export class FileUtils {
 
     /**
      * Watch changes to the source directory recursively and call a callback when it happens.
@@ -44,4 +43,4 @@ class FileUtils {
 }
 
 // Exports
-module.exports = FileUtils;
+export default FileUtils;

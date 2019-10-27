@@ -1,7 +1,7 @@
 /**
  *
  */
-class LogicUtils {
+export class LogicUtils {
 
 	/**
 	 *
@@ -20,4 +20,4 @@ class LogicUtils {
 }
 
 // Exports
-module.exports = LogicUtils;
+export default LogicUtils;

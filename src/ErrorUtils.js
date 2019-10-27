@@ -2,10 +2,10 @@
 /**
  *
  */
-class ErrorUtils {
+export class ErrorUtils {
 
 
 }
 
 // Exports
-module.exports = ErrorUtils;
+export default ErrorUtils;

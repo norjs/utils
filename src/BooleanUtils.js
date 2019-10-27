@@ -1,11 +1,10 @@
-const _ = require('lodash');
 
 /**
  *
  */
-class BooleanUtils {
+export class BooleanUtils {
 
 }
 
 // Exports
-module.exports = StringUtils;
+export default BooleanUtils;
