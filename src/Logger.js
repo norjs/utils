@@ -1,6 +1,10 @@
 import _ from 'lodash';
 import {LogUtils} from "./LogUtils";
 
+const NODE_ENV = process.env.NODE_ENV ? process.env.NODE_ENV : 'development';
+
+const IS_DEVELOPMENT = NODE_ENV === 'development';
+
 /**
  *
  */
@@ -38,7 +42,9 @@ export class Logger {
     }
 
     trace (...args) {
-        console.trace(this._getLine(...args));
+        if (IS_DEVELOPMENT) {
+            console.log(this._getLine(...args));
+        }
     }
 
     debug (...args) {

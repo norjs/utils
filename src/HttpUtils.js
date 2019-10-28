@@ -2,6 +2,9 @@ import _ from 'lodash';
 import LogicUtils from './LogicUtils.js';
 import StringUtils from './StringUtils.js';
 import HttpError from './HttpError.js';
+import LogUtils from "./LogUtils";
+
+const nrLog = LogUtils.getLogger("HttpUtils");
 
 /**
  *
@@ -380,14 +383,19 @@ export class HttpUtils {
             () => {
 
                 if (err instanceof HttpError) {
-                    HttpUtils.writeErrorJson(res, err.message, err.code, err.headers);
+                    if (!res.headersSent) {
+                        HttpUtils.writeErrorJson(res, err.message, err.code, err.headers);
+                    } else {
+                        nrLog.error('Headers were already sent: ', err);
+                        res.end();
+                    }
                     return;
                 }
 
                 if (err && err.stack) {
-                    console.error('Error: ' + err.stack);
+                    nrLog.error('Error: ' + err.stack);
                 } else {
-                    console.error('Error: ' + err);
+                    nrLog.error('Error: ' + err);
                 }
 
                 if (!res.headersSent) {
@@ -397,8 +405,16 @@ export class HttpUtils {
                 }
 
             },
-            err => {
-                console.error('ERROR in error handler: ', err);
+            err2 => {
+
+                nrLog.error('ERROR in error handler: ', err2);
+
+                if (err && err.stack) {
+                    nrLog.error('Original error was: ', err.stack);
+                } else {
+                    nrLog.error('Original error was: ', err);
+                }
+
                 res.end();
             }
         );
@@ -557,24 +573,32 @@ export class HttpUtils {
                     break;
                 }
 
-                throw new HttpError(405, `Method not allowed: "${method}"`);
+                nrLog.trace(`Method "${method}" wasn't configured in routes`);
+
+                throw new HttpError(405, `Method not allowed: ${method}`);
 
             default:
-                throw new HttpError(405, `Method not allowed: "${method}"`);
+                nrLog.trace(`Method "${method}" wasn't supported`);
+                throw new HttpError(405, `Method not allowed: ${method}`);
 
         }
 
         if (url.length === 0) {
-            throw new HttpError(404, `Not Found: "${url}"`);
+            nrLog.trace(`Request "${method} ${url}": URL was empty.`);
+            throw new HttpError(404, `Not Found: ${url}`);
         }
 
         if (url[0] !== "/") {
-            throw new HttpError(404, `Not Found: "${url}"`);
+            nrLog.trace(`Request "${method} ${url}": URL didn't start with "/"`);
+            throw new HttpError(404, `Not Found: ${url}`);
         }
 
         if (!_.has(routes[method], url)) {
-            throw new HttpError(404, `Not Found: "${url}"`);
+            nrLog.trace(`Request "${method} ${url}": Route wasn't configured`);
+            throw new HttpError(404, `Not Found: ${url}`);
         }
+
+        nrLog.trace(`Handling request "${method} ${url}"...`);
 
         if (_.isFunction(routes[method][url])) {
             return routes[method][url](...args);
