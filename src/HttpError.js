@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import HTTP from 'http';
 
-/** User definable object for codes
+/** WaUser definable object for codes
  *
  * @type {Object.<number, Function>}
  */

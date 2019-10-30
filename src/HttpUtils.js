@@ -3,6 +3,7 @@ import LogicUtils from './LogicUtils.js';
 import StringUtils from './StringUtils.js';
 import HttpError from './HttpError.js';
 import LogUtils from "./LogUtils";
+import querystring from 'querystring';
 
 const nrLog = LogUtils.getLogger("HttpUtils");
 
@@ -742,6 +743,45 @@ export class HttpUtils {
      */
     static getParams (url, request) {
         return url.parse(request.url, true).query;
+    }
+
+    /**
+     * Returns a value converted as 'Set-Cookie' header(s).
+     *
+     * Example: `response.setHeader('Set-Cookie', HttpUtils.getSetCookieHeaders({type: 'ninja', language: 'javascript'}));`
+     *
+     * @param value {Object}
+     * @param secure {boolean} Only secure connections accepted.
+     * @param httpOnly {boolean} The cookie is available only to the server, not JavaScript.
+     * @param expires {string} A date like `"Wed, 21 Oct 2015 07:28:00 GMT"`
+     * @param domain {string} Optional domain
+     * @param path {string} Optional path
+     * @param sameSite {string} Possible values: `"Strict"` or `"Lax"`
+     * @returns {Array.<string>}
+     */
+    static getSetCookieHeaders (
+        value,
+        {
+            secure = true
+            , httpOnly = true
+            , expires = undefined
+            , domain = undefined
+            , path = undefined
+            , sameSite = undefined
+        } = {}
+    ) {
+
+        return _.map(
+            _.keys(value),
+            key => `${ querystring.escape(key) }=${ querystring.escape(value[key]) }${ 
+                domain ? `; Domain=${querystring.escape(domain)}` : '' }${ 
+                path ? `; Path=${querystring.escape(path)}` : '' }${
+                sameSite ? `; SameSite=${querystring.escape(sameSite)}` : '' }${ 
+                expires ? `; Expires=${querystring.escape(expires)}` : '' }${ 
+                secure ? '; Secure' : '' }${ 
+                httpOnly ? '; HttpOnly' : '' }`
+        );
+
     }
 
 }

@@ -29,6 +29,13 @@ export class LogUtils {
      */
     static getAsString (value) {
 
+        if (value instanceof Error) {
+            if (value.stack) {
+                return `${value.stack}`;
+            }
+            return `${value}`;
+        }
+
         if (value === undefined) {
             return "undefined";
         }

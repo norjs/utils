@@ -7,6 +7,19 @@ const IS_DEVELOPMENT = NODE_ENV === 'development';
 
 /**
  *
+ * @enum {string}
+ * @readonly
+ */
+export const LogLevel = {
+    TRACE: 'TRACE',
+    DEBUG: 'DEBUG',
+    INFO: 'INFO',
+    WARN: 'WARN',
+    ERROR: 'ERROR'
+};
+
+/**
+ *
  */
 export class Logger {
 
@@ -43,28 +56,35 @@ export class Logger {
 
     trace (...args) {
         if (IS_DEVELOPMENT) {
-            console.log(this._getLine(...args));
+            console.log(this._getLine(LogLevel.TRACE, ...args));
         }
     }
 
     debug (...args) {
-        console.debug(this._getLine(...args));
+        console.debug(this._getLine(LogLevel.DEBUG, ...args));
     }
 
     info (...args) {
-        console.info(this._getLine(...args));
+        console.info(this._getLine(LogLevel.INFO, ...args));
     }
 
     warn (...args) {
-        console.warn(this._getLine(...args));
+        console.warn(this._getLine(LogLevel.WARN, ...args));
     }
 
     error (...args) {
-        console.error(this._getLine(...args));
+        console.error(this._getLine(LogLevel.ERROR, ...args));
     }
 
-    _getLine (...value) {
-        return `[${LogUtils.getTime()}] [${this._name}] ${LogUtils.getArrayAsString(value)}`;
+    /**
+     *
+     * @param logLevel {LogLevel|string}
+     * @param value {Array.<*>}
+     * @returns {string}
+     * @private
+     */
+    _getLine (logLevel, ...value) {
+        return `[${LogUtils.getTime()}] [${logLevel}] [${this._name}] ${LogUtils.getArrayAsString(value)}`;
     }
 
 }
