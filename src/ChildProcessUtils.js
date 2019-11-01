@@ -1,22 +1,58 @@
 import _ from 'lodash';
 import CHILD_PROCESS from 'child_process';
 import LogicUtils from './LogicUtils.js';
+import LogUtils from "./LogUtils";
+
+const nrLog = LogUtils.getLogger('ChildProcessUtils');
 
 /**
  *
  */
 export class NorChildProcess {
 
+    static get nrName () {
+        return "NorChildProcess";
+    }
+
+    get Class () {
+        return NorChildProcess;
+    }
+
+    get nrName () {
+        return this.Class.nrName;
+    }
+
     /**
      *
      * @param childProcess {ChildProcessWithoutNullStreams}
+     * @param detached {boolean}
      */
-    constructor (childProcess) {
+    constructor (
+        childProcess,
+        {
+            detached = undefined
+        } = {}
+    ) {
+
+        if (!childProcess) {
+            throw new TypeError(`new ${this.nrName}(): childProcess not defined!`);
+        }
+
+        if (!_.isBoolean(detached)) {
+            throw new TypeError(`new ${this.nrName}(): detached not defined!`);
+        }
 
         /**
          * @member {ChildProcessWithoutNullStreams}
          */
         this._childProcess = childProcess;
+
+        /**
+         *
+         * @member {boolean}
+         * @private
+         */
+        this._detached = detached;
 
         /**
          * @member {number}
@@ -37,6 +73,10 @@ export class NorChildProcess {
          * @private
          */
         this._result = undefined;
+
+    }
+
+    destroy () {
 
     }
 
@@ -101,6 +141,64 @@ export class NorChildProcess {
 
     }
 
+    /**
+     *
+     * @param signal {number|string}
+     */
+    kill (signal = 'SIGTERM') {
+
+        nrLog.trace(`Killing pid ${this._pid} with signal ${signal}`);
+
+        this._childProcess.kill(signal);
+
+    }
+
+    /**
+     * Sends a signal to the group of the pid.
+     *
+     * *NOTE!* You MUST start with `detached = true`!
+     * @fixme: Implement a check for windows platform, where this is not supported.
+     * @param signal {number|string}
+     */
+    killGroup (signal = 'SIGTERM') {
+
+        if (this._detached !== true) {
+            throw new TypeError(`${this.nrName}.killGroup(): not supported for non-detached process`);
+        }
+
+        nrLog.trace(`Killing pid group for ${this._pid} with signal ${signal}`);
+
+        process.kill(-this._pid, 'SIGTERM');
+
+    }
+
+    /**
+     *
+     * @returns {boolean}
+     */
+    hasStdIn () {
+        return !!(this._childProcess && this._childProcess.stdin);
+    }
+
+    /**
+     * Send CTRL-C to sub process stdin
+     */
+    sendCtrlC () {
+
+        if (!this._childProcess) {
+            throw new TypeError(`${this.nrName}.sendCtrlC(): No internal subProcess`)
+        }
+
+        if (!this._childProcess.stdin) {
+            throw new TypeError(`${this.nrName}.sendCtrlC(): Internal subProcess does not have stdin`)
+        }
+
+        nrLog.trace(`Sending CTRL-C to ${this._pid}`);
+
+        this._childProcess.stdin.write('\x03');
+
+    }
+
 }
 
 /**
@@ -129,6 +227,7 @@ class ChildProcessUtils {
      * @param uid {number}
      * @param gid {number}
      * @param shell {boolean|string}
+     * @param stdin { boolean | {[enabled]: boolean, [encoding]: string} }
      * @param stdout { boolean | Function | {[enabled]: boolean, [onData]: function, [encoding]: string} }
      * @param stderr { boolean | Function | {[enabled]: boolean, [onData]: function, [encoding]: string} }
      * @param unrefEnabled {boolean}
@@ -147,6 +246,7 @@ class ChildProcessUtils {
             , gid = undefined
             , shell = false
 
+            , stdin = false
             , stdout = true
             , stderr = true
             , unrefEnabled = undefined
@@ -155,24 +255,27 @@ class ChildProcessUtils {
         } = {}
     ) {
 
+        stdin = ChildProcessUtils._parseStreamOptions(stdin);
         stdout = ChildProcessUtils._parseStreamOptions(stdout);
         stderr = ChildProcessUtils._parseStreamOptions(stderr);
 
         const stdio = [
-            "ignore",
+            stdin.enabled ? "pipe" : "ignore",
             stdout.enabled ? "pipe" : "ignore",
             stderr.enabled ? "pipe" : "ignore"
         ];
 
+        detached = !!detached;
+
         const options = {
-            cwd: cwd,
-            env: _.merge({}, _.cloneDeep(process.env), _.cloneDeep(env || {})),
-            argv0,
-            stdio,
-            detached: !!detached,
-            uid,
-            gid,
-            shell
+            cwd: cwd
+            , env: _.merge({}, _.cloneDeep(process.env), _.cloneDeep(env || {}))
+            , argv0
+            , stdio
+            , detached
+            , uid
+            , gid
+            , shell
         };
 
         /**
@@ -181,7 +284,7 @@ class ChildProcessUtils {
          */
         const proc = CHILD_PROCESS.spawn(command, args, options);
 
-        const child = new NorChildProcess(proc);
+        const child = new NorChildProcess(proc, {detached});
 
         if ( options.detached && unrefEnabled ) {
 
