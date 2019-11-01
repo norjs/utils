@@ -424,6 +424,8 @@ export class HttpUtils {
 
     /**
      *
+     * *NOTE!* Make sure you start listening the 'error' event from returned server object!
+     *
      * @param http {HttpServerModule}
      * @param onRequest {Function|function} The callback takes (request, response) as params
      * @returns {HttpServerObject}
