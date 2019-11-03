@@ -52,7 +52,24 @@ export class LogUtils {
             return "Function";
         }
 
-        return JSON.stringify(value);
+        // @TODO: This is a quick workaround for circular structure error.
+        //        See issue: https://github.com/norjs/utils/issues/5
+        if ( value && _.has(value, '$modelValue') || _.has(value, '$viewValue') ) {
+            return `{$modelValue:${LogUtils.getAsString(value.$modelValue)}, $viewValue:${LogUtils.getAsString(value.$viewValue)}}`;
+        }
+
+        try {
+
+            return JSON.stringify(value);
+
+        } catch (err) {
+
+            console.error(`Exception: `, err);
+            console.debug(`Value was: `, value);
+
+            return `${err}`;
+
+        }
 
     }
 
