@@ -804,14 +804,20 @@ export class HttpUtils {
 
         return _.map(
             _.keys(value),
-            key => `${ querystring.escape(key) }=${ querystring.escape(value[key]) }${ 
-                domain ? `; Domain=${querystring.escape(domain)}` : '' }${ 
-                path ? `; Path=${querystring.escape(path)}` : '' }${
-                sameSite ? `; SameSite=${querystring.escape(sameSite)}` : '' }${ 
-                expires ? `; Expires=${querystring.escape(expires)}` : '' }${ 
+            key => `${ this._escapeForCookie(key) }=${ this._escapeForCookie(value[key]) }${ 
+                domain ? `; Domain=${domain}` : '' }${ 
+                path ? `; Path=${path}` : '' }${
+                sameSite ? `; SameSite=${sameSite}` : '' }${ 
+                expires ? `; Expires=${expires}` : '' }${ 
                 secure ? '; Secure' : '' }${ 
                 httpOnly ? '; HttpOnly' : '' }`
         );
+
+    }
+
+    static _escapeForCookie (value) {
+
+        return encodeURIComponent(value);
 
     }
 
