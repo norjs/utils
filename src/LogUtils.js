@@ -65,7 +65,7 @@ export class LogUtils {
         } catch (err) {
 
             console.error(`Exception: `, err);
-            console.debug(`Value was: `, value);
+            // console.debug(`Value was: `, value);
 
             return this.getAsString(err);
 

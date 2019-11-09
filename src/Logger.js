@@ -5,6 +5,8 @@ const NODE_ENV = process.env.NODE_ENV ? process.env.NODE_ENV : 'development';
 
 const IS_DEVELOPMENT = NODE_ENV === 'development';
 
+const LOGGER_MAX_LINE_LENGTH = 500;
+
 /**
  *
  * @enum {string}
@@ -56,24 +58,44 @@ export class Logger {
 
     trace (...args) {
         if (IS_DEVELOPMENT) {
-            console.log(this._getLine(LogLevel.TRACE, ...args));
+            try {
+                console.log(this._getLine(LogLevel.TRACE, ...args));
+            } catch (err) {
+                console.error(`${this.nrName}.trace(): Exception: `, err);
+            }
         }
     }
 
     debug (...args) {
-        console.debug(this._getLine(LogLevel.DEBUG, ...args));
+        try {
+            console.debug(this._getLine(LogLevel.DEBUG, ...args));
+        } catch (err) {
+            console.error(`${this.nrName}.debug(): Exception: `, err);
+        }
     }
 
     info (...args) {
-        console.info(this._getLine(LogLevel.INFO, ...args));
+        try {
+            console.info(this._getLine(LogLevel.INFO, ...args));
+        } catch (err) {
+            console.error(`${this.nrName}.info(): Exception: `, err);
+        }
     }
 
     warn (...args) {
-        console.warn(this._getLine(LogLevel.WARN, ...args));
+        try {
+            console.warn(this._getLine(LogLevel.WARN, ...args));
+        } catch (err) {
+            console.error(`${this.nrName}.warn(): Exception: `, err);
+        }
     }
 
     error (...args) {
-        console.error(this._getLine(LogLevel.ERROR, ...args));
+        try {
+            console.error(this._getLine(LogLevel.ERROR, ...args));
+        } catch (err) {
+            console.error(`${this.nrName}.error(): Exception: `, err);
+        }
     }
 
     /**
@@ -84,7 +106,15 @@ export class Logger {
      * @private
      */
     _getLine (logLevel, ...value) {
-        return `[${LogUtils.getTime()}] [${logLevel}] [${this._name}] ${LogUtils.getArrayAsString(value)}`;
+
+        let line = `[${LogUtils.getTime()}] [${logLevel}] [${this._name}] ${LogUtils.getArrayAsString(value)}`;
+
+        if (line.length >= LOGGER_MAX_LINE_LENGTH) {
+            line = `${line.substr(0, LOGGER_MAX_LINE_LENGTH)}...`;
+        }
+
+        return line;
+
     }
 
 }
