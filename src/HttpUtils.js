@@ -558,7 +558,7 @@ export class HttpUtils {
      * @returns {*}
      * @throws {HttpError} May throw HttpErrors
      */
-    static routeRequest({url, method}, routes, ...args) {
+    static routeRequest ({url, method}, routes, ...args) {
 
         switch (method) {
 
@@ -576,38 +576,67 @@ export class HttpUtils {
                     break;
                 }
 
-                nrLog.trace(`Method "${method}" wasn't configured in routes`);
+                nrLog.trace(`.routeRequest(): Method "${method}" wasn't configured in routes`);
 
                 throw new HttpError(405, `Method not allowed: ${method}`);
 
             default:
-                nrLog.trace(`Method "${method}" wasn't supported`);
+                nrLog.trace(`.routeRequest(): Method "${method}" wasn't supported`);
                 throw new HttpError(405, `Method not allowed: ${method}`);
 
         }
 
+        let useDefaultRoute = false;
+
+        const hasDefaultRoute = _.has(routes[method], "DEFAULT");
+
         if (url.length === 0) {
-            nrLog.trace(`Request "${method} ${url}": URL was empty.`);
-            throw new HttpError(404, `Not Found: ${url}`);
+            if (hasDefaultRoute) {
+                useDefaultRoute = true;
+            } else {
+                nrLog.trace(`.routeRequest(): Request "${method} ${url}": URL was empty.`);
+                throw new HttpError(404, `Not Found: ${url}`);
+            }
         }
 
         if (url[0] !== "/") {
-            nrLog.trace(`Request "${method} ${url}": URL didn't start with "/"`);
-            throw new HttpError(404, `Not Found: ${url}`);
+            if (hasDefaultRoute) {
+                useDefaultRoute = true;
+            } else {
+                nrLog.trace(`.routeRequest(): Request "${method} ${url}": URL didn't start with "/"`);
+                throw new HttpError(404, `Not Found: ${url}`);
+            }
         }
 
         if (!_.has(routes[method], url)) {
-            nrLog.trace(`Request "${method} ${url}": Route wasn't configured`);
-            throw new HttpError(404, `Not Found: ${url}`);
+            if (hasDefaultRoute) {
+                useDefaultRoute = true;
+            } else {
+                nrLog.trace(`.routeRequest(): Request "${method} ${url}": Route wasn't configured`);
+                throw new HttpError(404, `Not Found: ${url}`);
+            }
         }
 
-        nrLog.trace(`Handling request "${method} ${url}"...`);
+        if (useDefaultRoute) {
+
+            nrLog.trace(`.routeRequest(): Handling request "${method} ${url}" using default route...`);
+
+            if (_.isFunction(routes[method].DEFAULT)) {
+                return routes[method].DEFAULT(...args);
+            }
+
+            return routes[method].DEFAULT;
+
+        }
+
+        nrLog.trace(`.routeRequest(): Handling request "${method} ${url}"...`);
 
         if (_.isFunction(routes[method][url])) {
             return routes[method][url](...args);
         }
 
         return routes[method][url];
+
     }
 
     /**
