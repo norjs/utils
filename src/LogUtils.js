@@ -67,7 +67,7 @@ export class LogUtils {
             console.error(`Exception: `, err);
             console.debug(`Value was: `, value);
 
-            return `${err}`;
+            return this.getAsString(err);
 
         }
 
