@@ -3,7 +3,7 @@ import LogicUtils from './LogicUtils.js';
 import StringUtils from './StringUtils.js';
 import HttpError from './HttpError.js';
 import LogUtils from "./LogUtils";
-import querystring from 'querystring';
+import JsonUtils from "./JsonUtils";
 
 const nrLog = LogUtils.getLogger("HttpUtils");
 
@@ -493,7 +493,7 @@ export class HttpUtils {
 
         res.writeHead(code, { 'Content-Type': 'application/json' });
 
-        res.end( JSON.stringify(data) + '\n' );
+        res.end( JsonUtils.stringify(data) + '\n' );
 
     }
 

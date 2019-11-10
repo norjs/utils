@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import {Logger} from "./Logger";
+import JsonUtils from "./JsonUtils";
 
 /**
  *
@@ -60,24 +61,7 @@ export class LogUtils {
 
         try {
 
-            const knownObjects = [];
-
-            return JSON.stringify(value, (key, value) => {
-
-                if (!_.isObject(value)) {
-                    return value;
-                }
-
-                const index = knownObjects.indexOf(value);
-                if (index < 0) {
-                    knownObjects.push(value);
-                    return value;
-                }
-
-                // It's circular reference.
-                return {'$ref': `circular#${index}`};
-
-            });
+            return JsonUtils.stringify(value);
 
         } catch (err) {
 
