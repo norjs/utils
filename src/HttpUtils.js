@@ -5,7 +5,45 @@ import HttpError from './HttpError.js';
 import LogUtils from "./LogUtils";
 import JsonUtils from "./JsonUtils";
 
+/**
+ *
+ * @type {string}
+ */
+const NODE_ENV = process.env.NODE_ENV ? _.toLower(process.env.NODE_ENV) : 'development';
+
+/**
+ *
+ * @type {boolean}
+ */
+const IS_DEVELOPMENT = NODE_ENV === 'development';
+
+/**
+ *
+ * @type {Logger}
+ */
 const nrLog = LogUtils.getLogger("HttpUtils");
+
+/**
+ *
+ * @enum {number}
+ * @readonly
+ */
+export const NrHttpStatusCode = {
+
+    INTERNAL_SERVER_ERROR : 500
+
+};
+
+/**
+ *
+ * @enum {string}
+ * @readonly
+ */
+export const NrHttpStatusText = {
+
+    INTERNAL_SERVER_ERROR : "nrErrors.internalServerError"
+
+};
 
 /**
  *
@@ -18,6 +56,22 @@ export class HttpUtils {
      */
     static get HttpError () {
         return HttpError;
+    }
+
+    /**
+     *
+     * @returns {typeof NrHttpStatusCode}
+     */
+    static get StatusCode () {
+        return NrHttpStatusCode;
+    }
+
+    /**
+     *
+     * @returns {typeof NrHttpStatusText}
+     */
+    static get StatusText () {
+        return NrHttpStatusText;
     }
 
     /**
@@ -383,26 +437,79 @@ export class HttpUtils {
         LogicUtils.tryCatch(
             () => {
 
-                if (err instanceof HttpError) {
+                if ( err instanceof HttpError ) {
+
                     if (!res.headersSent) {
-                        HttpUtils.writeErrorJson(res, err.message, err.code, err.headers);
+
+                        if (IS_DEVELOPMENT) {
+
+                            HttpUtils.writeErrorJson(
+                                res,
+                                err.message,
+                                err.code,
+                                err.headers,
+                                {
+                                    title: `${err}`,
+                                    summary: err.stack ? `${err.stack}` : undefined
+                                }
+                            );
+
+                        } else {
+
+                            HttpUtils.writeErrorJson(res, err.message, err.code, err.headers);
+
+                        }
+
                     } else {
-                        nrLog.error('Headers were already sent: ', err);
+
+                        if ( err && err.stack ) {
+                            nrLog.error('Headers were already sent: ', err.stack);
+                        } else {
+                            nrLog.error('Headers were already sent: ', err);
+                        }
+
                         res.end();
+
                     }
+
                     return;
                 }
 
-                if (err && err.stack) {
-                    nrLog.error('Error: ' + err.stack);
+                if ( err && err.stack ) {
+                    nrLog.error('Response Error: ' + err.stack);
                 } else {
-                    nrLog.error('Error: ' + err);
+                    nrLog.error('Response Error: ' + err);
                 }
 
                 if (!res.headersSent) {
-                    HttpUtils.writeErrorJson(res, "Exception", 500);
+
+                    if (IS_DEVELOPMENT) {
+
+                        HttpUtils.writeErrorJson(
+                            res,
+                            NrHttpStatusText.INTERNAL_SERVER_ERROR,
+                            NrHttpStatusCode.INTERNAL_SERVER_ERROR,
+                            {},
+                            {
+                                title: `${err}`,
+                                summary: err.stack ? `${err.stack}` : undefined
+                            }
+                        );
+
+                    } else {
+
+                        HttpUtils.writeErrorJson(
+                            res,
+                            NrHttpStatusText.INTERNAL_SERVER_ERROR,
+                            NrHttpStatusCode.INTERNAL_SERVER_ERROR
+                        );
+
+                    }
+
                 } else {
+
                     res.end();
+
                 }
 
             },
@@ -501,12 +608,13 @@ export class HttpUtils {
      *
      * @param res {HttpResponseObject}
      * @param code {number}
-     * @param error {string}
-     * @param headers {Object}
+     * @param [error] {string}
+     * @param [headers] {Object}
+     * @param [payload] {Object}
      */
-    static writeErrorJson (res, error, code = 500, headers = {}) {
+    static writeErrorJson (res, error, code = 500, headers = {}, payload = {}) {
 
-        HttpUtils.writeJson(res, {error, code}, code, headers);
+        HttpUtils.writeJson(res, {error, code, payload}, code, headers);
 
     }
 
