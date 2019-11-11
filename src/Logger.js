@@ -176,6 +176,14 @@ export class Logger {
 
     }
 
+    /**
+     *
+     * @returns {string}
+     */
+    get name () {
+        return this._name;
+    }
+
     // noinspection JSUnusedGlobalSymbols
     /**
      *
