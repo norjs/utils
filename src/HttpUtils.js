@@ -753,27 +753,23 @@ export class HttpUtils {
      * @param request {HttpRequestObject}
      * @return {Promise.<Buffer>} The request input data
      */
-    static getRequestDataAsBuffer (request) {
+    static async getRequestDataAsBuffer (request) {
         return new Promise( (resolve, reject) => {
-            LogicUtils.tryCatch(
-                () => {
-                    let chunks = [];
 
-                    request.on('data', chunk => {
-                        LogicUtils.tryCatch(() => {
-                            chunks.push(chunk);
-                        }, reject);
-                    });
+            let chunks = [];
 
-                    request.on('end', () => {
-                        LogicUtils.tryCatch(() => {
-                            resolve( Buffer.concat(chunks) );
-                        }, reject);
-                    });
+            request.on('data', chunk => {
+                LogicUtils.tryCatch(() => {
+                    chunks.push(chunk);
+                }, reject);
+            });
 
-                },
-                reject
-            );
+            request.on('end', () => {
+                LogicUtils.tryCatch(() => {
+                    resolve( Buffer.concat(chunks) );
+                }, reject);
+            });
+
         });
     }
 
@@ -784,8 +780,12 @@ export class HttpUtils {
      * @param encoding {string}
      * @return {Promise<string | string>} The request input data
      */
-    static getRequestDataAsString (request, encoding = 'utf8') {
-        return HttpUtils.getRequestDataAsBuffer(request).then(buffer => buffer.toString(encoding) );
+    static async getRequestDataAsString (request, encoding = 'utf8') {
+
+        const buffer = await HttpUtils.getRequestDataAsBuffer(request);
+
+        return buffer.toString(encoding);
+
     }
 
     /**
@@ -794,14 +794,16 @@ export class HttpUtils {
      * @param request {HttpRequestObject}
      * @return {Promise.<*|undefined>} The request input data. If request data is an empty string, an `undefined` will be returned.
      */
-    static getRequestDataAsJson (request) {
-        return HttpUtils.getRequestDataAsString(request).then(dataString => {
-            if (dataString === "") {
-                return undefined;
-            } else {
-                return JSON.parse(dataString);
-            }
-        });
+    static async getRequestDataAsJson (request) {
+
+        const dataString = await HttpUtils.getRequestDataAsString(request);
+
+        if (dataString === "") {
+            return undefined;
+        } else {
+            return JSON.parse(dataString);
+        }
+
     }
 
     /**
