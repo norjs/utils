@@ -9,9 +9,12 @@ export class JsonUtils {
      * Circular reference safe JSON stringifier.
      *
      * @param value {*}
+     * @param space {string|number}
      * @returns {string}
      */
-    static stringify (value) {
+    static stringify (value, {
+        space = undefined
+    } = {}) {
 
         const knownObjects = [];
 
@@ -30,7 +33,7 @@ export class JsonUtils {
             // It's circular reference.
             return {'$ref': `circular#${index}`};
 
-        });
+        }, space);
 
     }
 

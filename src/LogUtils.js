@@ -26,15 +26,21 @@ export class LogUtils {
     /**
      *
      * @param value {*}
+     * @param multiLine {boolean}
      * @returns {string}
      */
-    static getAsString (value) {
+    static getAsString (value, {
+        multiLine = false
+    } = {}) {
 
         if (value instanceof Error) {
+
             if (value.stack) {
                 return `${value.stack}`;
             }
+
             return `${value}`;
+
         }
 
         if (value === undefined) {
@@ -56,19 +62,32 @@ export class LogUtils {
         // @TODO: This is a quick workaround for circular structure error.
         //        See issue: https://github.com/norjs/utils/issues/5
         if ( value && _.has(value, '$modelValue') || _.has(value, '$viewValue') ) {
-            return `{$modelValue:${LogUtils.getAsString(value.$modelValue)}, $viewValue:${LogUtils.getAsString(value.$viewValue)}}`;
+
+            return LogUtils.getAsString({
+                $modelValue: value.$modelValue,
+                $viewValue: value.$viewValue
+            }, {
+                multiLine
+            });
+
         }
 
         try {
 
-            return JsonUtils.stringify(value);
+            if (multiLine) {
+                return JsonUtils.stringify(value, {space: 2});
+            } else {
+                return JsonUtils.stringify(value);
+            }
 
         } catch (err) {
 
             console.error(`Exception: `, err);
             // console.debug(`Value was: `, value);
 
-            return this.getAsString(err);
+            return this.getAsString(err, {
+                multiLine
+            });
 
         }
 
