@@ -63,12 +63,10 @@ export class LogUtils {
         //        See issue: https://github.com/norjs/utils/issues/5
         if ( value && _.has(value, '$modelValue') || _.has(value, '$viewValue') ) {
 
-            return LogUtils.getAsString({
-                $modelValue: value.$modelValue,
-                $viewValue: value.$viewValue
-            }, {
-                multiLine
-            });
+            return `{
+    $modelValue: ${LogUtils.getAsString(value.$modelValue, {multiLine})},
+    $viewValue: ${LogUtils.getAsString(value.$viewValue, {multiLine})}
+}`;
 
         }
 
