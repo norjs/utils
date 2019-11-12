@@ -16,6 +16,12 @@ const IS_DEVELOPMENT = NODE_ENV === 'development';
 
 /**
  *
+ * @type {boolean}
+ */
+const ENABLE_LOG_COLORS = IS_DEVELOPMENT ? (process.env.NO_COLORS ? false : true) : false;
+
+/**
+ *
  * @type {number}
  */
 const LOGGER_MAX_LINE_LENGTH = process.env.NR_LOG_MAX_LINE_LENGTH ? StringUtils.parseInteger(process.env.NR_LOG_MAX_LINE_LENGTH) : 500;
@@ -76,6 +82,57 @@ export const LogLevelNumber = {
      * NONE (0)
      */
     NONE  : 0
+
+};
+
+/**
+ *
+ * @enum {string}
+ * @readonly
+ * @fixme Implement AnsiColorUtils and move there
+ */
+const AnsiColorCode = {
+
+    RESET       : "\x1b[0m",
+    BRIGHT      : "\x1b[1m",
+    DIM         : "\x1b[2m",
+    UNDERSCORE  : "\x1b[4m",
+    BLINK       : "\x1b[5m",
+    REVERSE     : "\x1b[7m",
+    HIDDEN      : "\x1b[8m",
+
+    BLACK       : "\x1b[30m",
+    RED         : "\x1b[31m",
+    GREEN       : "\x1b[32m",
+    YELLOW      : "\x1b[33m",
+    BLUE        : "\x1b[34m",
+    MAGENTA     : "\x1b[35m",
+    CYAN        : "\x1b[36m",
+    WHITE       : "\x1b[37m",
+
+    BG_BLACK    : "\x1b[40m",
+    BG_RED      : "\x1b[41m",
+    BG_GREEN    : "\x1b[42m",
+    BG_YELLOW   : "\x1b[43m",
+    BG_BLUE     : "\x1b[44m",
+    BG_MAGENTA  : "\x1b[45m",
+    BG_CYAN     : "\x1b[46m",
+    BG_WHITE    : "\x1b[47m"
+
+};
+
+/**
+ *
+ * @enum {AnsiColorCode|string}
+ * @readonly
+ */
+const LogLevelColorCode = {
+
+    TRACE : AnsiColorCode.CYAN,
+    DEBUG : AnsiColorCode.WHITE,
+    INFO  : `${AnsiColorCode.BRIGHT}${AnsiColorCode.BLUE}`,
+    WARN  : AnsiColorCode.YELLOW,
+    ERROR : AnsiColorCode.RED
 
 };
 
@@ -214,7 +271,7 @@ export class Logger {
     trace (...args) {
         if ( IS_DEVELOPMENT && this._logLevel >= LogLevelNumber.TRACE ) {
             try {
-                console.log(this._getLine(LogLevel.TRACE, ...args));
+                console.log(this._getLine(LogLevelColorCode.TRACE, LogLevel.TRACE, ...args));
             } catch (err) {
                 console.error(`${this.nrName}.trace(): Exception: `, err);
             }
@@ -224,7 +281,7 @@ export class Logger {
     debug (...args) {
         if ( this._logLevel >= LogLevelNumber.DEBUG ) {
             try {
-                console.debug(this._getLine(LogLevel.DEBUG, ...args));
+                console.debug(this._getLine(LogLevelColorCode.DEBUG, LogLevel.DEBUG, ...args));
             } catch (err) {
                 console.error(`${this.nrName}.debug(): Exception: `, err);
             }
@@ -234,7 +291,7 @@ export class Logger {
     info (...args) {
         if ( this._logLevel >= LogLevelNumber.INFO ) {
             try {
-                console.info(this._getLine(LogLevel.INFO, ...args));
+                console.info(this._getLine(LogLevelColorCode.INFO, LogLevel.INFO, ...args));
             } catch (err) {
                 console.error(`${this.nrName}.info(): Exception: `, err);
             }
@@ -244,7 +301,7 @@ export class Logger {
     warn (...args) {
         if ( this._logLevel >= LogLevelNumber.WARN ) {
             try {
-                console.warn(this._getLine(LogLevel.WARN, ...args));
+                console.warn(this._getLine(LogLevelColorCode.WARN, LogLevel.WARN, ...args));
             } catch (err) {
                 console.error(`${this.nrName}.warn(): Exception: `, err);
             }
@@ -254,7 +311,7 @@ export class Logger {
     error (...args) {
         if ( this._logLevel >= LogLevelNumber.ERROR ) {
             try {
-                console.error(this._getLine(LogLevel.ERROR, ...args));
+                console.error(this._getLine(LogLevelColorCode.ERROR, LogLevel.ERROR, ...args));
             } catch (err) {
                 console.error(`${this.nrName}.error(): Exception: `, err);
             }
@@ -263,17 +320,22 @@ export class Logger {
 
     /**
      *
+     * @param color {LogColor|string}
      * @param logLevel {LogLevel|string}
      * @param value {Array.<*>}
      * @returns {string}
      * @private
      */
-    _getLine (logLevel, ...value) {
+    _getLine (color, logLevel, ...value) {
 
         let line = `[${LogUtils.getTime()}] [${logLevel}] [${this._name}] ${LogUtils.getArrayAsString(value)}`;
 
         if (line.length >= LOGGER_MAX_LINE_LENGTH) {
             line = `${line.substr(0, LOGGER_MAX_LINE_LENGTH)}...`;
+        }
+
+        if ( ENABLE_LOG_COLORS && color ) {
+            line = `${color}${line}${AnsiColorCode.RESET}`;
         }
 
         return line;
