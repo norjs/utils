@@ -153,6 +153,22 @@ export class Logger {
 
     /**
      *
+     * @returns {typeof LogLevel}
+     */
+    static get LogLevel () {
+        return LogLevel;
+    }
+
+    /**
+     *
+     * @returns {typeof LogLevel}
+     */
+    get LogLevel () {
+        return this.Class.LogLevel;
+    }
+
+    /**
+     *
      * @param name {string}
      */
     constructor (name) {
