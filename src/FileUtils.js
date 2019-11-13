@@ -1,4 +1,7 @@
 import LogicUtils from './LogicUtils.js';
+import LogUtils from "./LogUtils";
+
+const nrLog = LogUtils.getLogger("FileUtils");
 
 /**
  *
@@ -20,7 +23,7 @@ export class FileUtils {
 
         let watcher = fs.watch(sourceDir, {recursive: true}, () => {
             LogicUtils.tryCatch(callback, err => {
-                console.error('Exception: ', err);
+                nrLog.error('Exception: ', err);
             });
         });
 
@@ -29,7 +32,7 @@ export class FileUtils {
             if (watcher) {
 
                 LogicUtils.tryCatch(() => watcher.close(), err => {
-                    console.error('Exception: ', err);
+                    nrLog.error('Exception: ', err);
                 });
 
                 watcher = undefined;

@@ -1,5 +1,8 @@
 import _ from 'lodash';
 import LogicUtils from './LogicUtils.js';
+import LogUtils from "./LogUtils";
+
+const nrLog = LogUtils.getLogger("TypeUtils");
 
 /**
  * @typedef {object} TestResult
@@ -258,7 +261,7 @@ export class TypeUtils {
             if ( _.startsWith(rest, "<") && _.endsWith(rest, '>') ) {
                 rest = _.trim(rest.substr(1, rest.length - 2));
                 const itemTestFunction = this._compileTestFunction(rest);
-                // console.debug(`Parsed "${rest}" as `, itemTestFunction);
+                // nrLog.trace(`Parsed "${rest}" as `, itemTestFunction);
                 return value => _.isArray(value) && this._everyArrayItemResult(value, itemTestFunction, rest, type);
             }
         }
@@ -267,7 +270,7 @@ export class TypeUtils {
         if (_.endsWith(type, '[]')) {
             let rest = _.trim(type.substr(0, type.length - 2));
             const itemTestFunction = this._compileTestFunction(rest);
-            // console.debug(`Parsed "${rest}" as `, itemTestFunction);
+            // nrLog.trace(`Parsed "${rest}" as `, itemTestFunction);
             return value => _.isArray(value) && this._everyArrayItemResult(value, itemTestFunction, rest, type);
         }
 
@@ -288,8 +291,8 @@ export class TypeUtils {
                     const keyTestFunction = this._compileTestFunction(keyType);
                     const valueTestFunction = this._compileTestFunction(valueType);
 
-                    // console.debug(`Parsed "${keyType}" as `, keyTestFunction);
-                    // console.debug(`Parsed "${valueType}" as `, valueTestFunction);
+                    // nrLog.trace(`Parsed "${keyType}" as `, keyTestFunction);
+                    // nrLog.trace(`Parsed "${valueType}" as `, valueTestFunction);
                     return value => _.isObject(value) && this._everyObjectItemResult(
                         value,
                         keyTestFunction,
@@ -339,7 +342,7 @@ export class TypeUtils {
             if ( _.startsWith(rest, "<") && _.endsWith(rest, '>') ) {
                 rest = _.trim(rest.substr(1, rest.length - 2));
                 // FIXME: Should we assert something that's asynchronous? See https://github.com/norjs/utils/issues/4
-                console.warn(`Tried to assert a promise with asynchronous result type "${rest}", which is ignored.`);
+                nrLog.warn(`Tried to assert a promise with asynchronous result type "${rest}", which is ignored.`);
                 return this._compileTestFunction("Promise");
             }
         }
@@ -403,7 +406,7 @@ export class TypeUtils {
         }
 
         const result = LogicUtils.tryCatch( () => test(value), err => {
-            console.error('Error: ', err);
+            nrLog.error('Error: ', err);
             return {
                 value: false,
                 description: 'Test function failed with: ' + err
@@ -539,7 +542,7 @@ export class TypeUtils {
         _.forEach(_.keys(obj), key => {
 
             if (!_.has(propertyTestFunctions, key)) {
-                // console.debug(`Key "${key}" did not have a test function.`);
+                // nrLog.trace(`Key "${key}" did not have a test function.`);
 
                 if (options.acceptUndefinedProperties) {
                     return;
@@ -558,7 +561,7 @@ export class TypeUtils {
             const valueResult = this._callTestFunction(valueTest, value, origType, origType);
             const valueResultValue = this._getResultValue(valueResult);
 
-            // console.debug(`Key "${key}" resulted in "${valueResultValue}" as `, valueResult);
+            // nrLog.trace(`Key "${key}" resulted in "${valueResultValue}" as `, valueResult);
 
             if (!valueResultValue) {
                 failed.push({
@@ -574,7 +577,7 @@ export class TypeUtils {
 
         if (resultValue) return {value:true};
 
-        // console.debug(`failed = `, failed, ` as "${resultValue}"`);
+        // nrLog.trace(`failed = `, failed, ` as "${resultValue}"`);
 
         const failedDescription = _.filter(failed, f => !f.value && f.description).map(f => f.description).join(', ');
 

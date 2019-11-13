@@ -1,5 +1,8 @@
 import LogicUtils from './LogicUtils.js';
+import LogUtils from './LogUtils.js';
 import PATH from 'path';
+
+const nrLog = LogUtils.getLogger("ProcessUtils");
 
 /**
  *
@@ -22,7 +25,7 @@ export class ProcessUtils {
                 callback();
             },
             err => {
-                console.error('Exception: ' + err)
+                nrLog.error('Exception: ' + err)
             }
         );
 
@@ -52,11 +55,7 @@ export class ProcessUtils {
      */
     static handleError (err) {
 
-        console.error(`Exception: "${err}"`);
-
-        if (err.stack) {
-            console.error(err.stack);
-        }
+        nrLog.error(`Error: `, err);
 
         process.exit(1);
 

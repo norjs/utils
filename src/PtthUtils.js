@@ -4,6 +4,8 @@ import LogicUtils from './LogicUtils.js';
 import HttpUtils from './HttpUtils.js';
 import HttpError from './HttpError.js';
 
+const nrLog = LogUtils.getLogger("PtthUtils");
+
 /**
  *
  */
@@ -75,7 +77,7 @@ export class PtthUtils {
      */
     static onSocketAlreadyCreatedError (request, socket, head) {
 
-        console.error(LogUtils.getLine(`ERROR: The socket was already created.`));
+        nrLog.error(LogUtils.getLine(`ERROR: The socket was already created.`));
 
         socket.end('HTTP/1.1 500 Internal Error');
 
@@ -105,7 +107,7 @@ export class PtthUtils {
      */
     static onSwitchingProtocols (request, socket, head) {
 
-        console.log(LogUtils.getLine(`"${ request.method } ${ request.url }": Switching Protocols to PTTH/1.0`));
+        nrLog.log(LogUtils.getLine(`"${ request.method } ${ request.url }": Switching Protocols to PTTH/1.0`));
 
         // noinspection JSUnresolvedFunction
         socket.setKeepAlive(true);
@@ -138,9 +140,9 @@ export class PtthUtils {
                 }
 
                 if (err && err.stack) {
-                    console.error(LogUtils.getLine('Error: ' + err.stack));
+                    nrLog.error(LogUtils.getLine('Error: ' + err.stack));
                 } else {
-                    console.error(LogUtils.getLine('Error: ' + err));
+                    nrLog.error(LogUtils.getLine('Error: ' + err));
                 }
 
                 replySent = true;
@@ -148,7 +150,7 @@ export class PtthUtils {
 
             },
             err => {
-                console.error(LogUtils.getLine('ERROR in error handler: '), err);
+                nrLog.error(LogUtils.getLine('ERROR in error handler: '), err);
                 if (!replySent) {
                     socket.end(`HTTP/1.1 500 Internal Server Error`);
                 }
