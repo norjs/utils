@@ -19,13 +19,16 @@ export class ProcessUtils {
 
         const closeProcess = () => LogicUtils.tryCatch(
             () => {
+
                 if (destroyed) return;
+
                 destroyed = true;
 
                 callback();
+
             },
             err => {
-                nrLog.error('Exception: ' + err)
+                nrLog.error('Exception: ', err);
             }
         );
 

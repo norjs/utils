@@ -41,7 +41,7 @@ const nrLog = LogUtils.getLogger("TypeUtils");
  */
 
 /**
- * An object which contains uncompiled test types for each property by key name.
+ * An object which contains uncompiled test beTypes for each property by key name.
  *
  * See `PropertiesTestFunctionObject` for compiled version.
  *
