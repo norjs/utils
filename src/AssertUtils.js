@@ -136,6 +136,62 @@ export class AssertUtils {
     }
 
     /**
+     * Throw an exception if condition fails
+     *
+     * @param value {object}
+     * @param maxLength {number}
+     */
+    static isArrayWithMaxLength (value, maxLength) {
+
+        if ( ! ( _.isArray(value) && value.length <= maxLength ) ) {
+            throw new TypeError(`${this.nrName}.isArrayWithMaxLength(value): value is not an array with max ${maxLength} items: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
+     * Throw an exception if condition fails
+     *
+     * @param value {object}
+     * @param maxLength {number}
+     */
+    static isArrayWithMinLength (value, minLength) {
+
+        if ( ! ( _.isArray(value) && value.length > minLength ) ) {
+            throw new TypeError(`${this.nrName}.isArrayWithMaxLength(value): value is not an array with minimum ${minLength} items: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
+     * Throw an exception if condition fails
+     *
+     * @param value {object}
+     * @param maxLength {number}
+     */
+    static isStringWithMaxLength (value, maxLength) {
+
+        if ( ! ( _.isString(value) && value.length <= maxLength ) ) {
+            throw new TypeError(`${this.nrName}.isStringWithMaxLength(value): value is not an array with max ${maxLength} items: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
+     * Throw an exception if condition fails
+     *
+     * @param value {object}
+     * @param maxLength {number}
+     */
+    static isStringWithMinLength (value, minLength) {
+
+        if ( ! ( _.isString(value) && value.length > minLength ) ) {
+            throw new TypeError(`${this.nrName}.isStringWithMaxLength(value): value is not an array with minimum ${minLength} items: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
      * Throw an exception if not a string or pattern does not match
      *
      * @param value {string}
@@ -171,6 +227,43 @@ export class AssertUtils {
 
         if ( value !== testValue ) {
             throw new TypeError(`${this.nrName}.isEqual(value): value did not equal: ${LogUtils.getAsString(value)} !== ${LogUtils.getAsString(testValue)}`);
+        }
+
+    }
+
+    /**
+     *
+     * @param value
+     */
+    static isDate (value) {
+
+        if ( !(value && value instanceof Date) ) {
+            throw new TypeError(`${this.nrName}.isDate(value): value was not Date: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
+     *
+     * @param value
+     */
+    static isUuidString (value) {
+
+        if (!( _.isString(value) && /^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/.test(value) )) {
+            throw new TypeError(`${this.nrName}.isUuid(value): value was not UUID: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
+     *
+     * @param value
+     * @param Type
+     */
+    static isInstanceOf (value, Type) {
+
+        if (!( _.isObject(value) && value instanceof Type )) {
+            throw new TypeError(`${this.nrName}.isInstanceOf(value): value was not instance of ${Type}: ${LogUtils.getAsString(value)}`);
         }
 
     }
