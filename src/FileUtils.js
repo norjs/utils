@@ -21,11 +21,25 @@ export class FileUtils {
      */
     static watchDirectory (fs, sourceDir, callback) {
 
-        let watcher = fs.watch(sourceDir, {recursive: true}, () => {
-            LogicUtils.tryCatch(callback, err => {
-                nrLog.error('Exception: ', err);
+        let watcher;
+
+        if ( process.platform === 'win32' || process.platform === 'darwin' ) {
+
+            watcher = fs.watch(sourceDir, {recursive: true}, () => {
+                LogicUtils.tryCatch(callback, err => {
+                    nrLog.error('Exception: ', err);
+                });
             });
-        });
+
+        } else {
+
+            watcher = require('node-watch')(sourceDir, {recursive: true}, () => {
+                LogicUtils.tryCatch(callback, err => {
+                    nrLog.error('Exception: ', err);
+                });
+            });
+
+        }
 
         return () => {
 
