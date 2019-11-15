@@ -245,12 +245,24 @@ export class AssertUtils {
 
     /**
      *
+     * @param value {string}
+     */
+    static isDateString (value) {
+
+        if ( !( _.isString(value) && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z$/.test(value) ) ) {
+            throw new TypeError(`${this.nrName}.isDateString(value): value was not a date string: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
+     *
      * @param value
      */
     static isUuidString (value) {
 
         if (!( _.isString(value) && /^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/.test(value) )) {
-            throw new TypeError(`${this.nrName}.isUuid(value): value was not UUID: ${LogUtils.getAsString(value)}`);
+            throw new TypeError(`${this.nrName}.isUuidString(value): value was not UUID: ${LogUtils.getAsString(value)}`);
         }
 
     }
