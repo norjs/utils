@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import LogUtils from "./LogUtils";
 
 /**
  *
@@ -90,6 +91,18 @@ export class StringUtils {
         } catch (err) {
             return defaultValue;
         }
+
+    }
+
+    /**
+     * Tests that the value is a date string, eg. `"2019-11-21T23:41:42Z"`.
+     *
+     * @param value {string}
+     * @returns {boolean}
+     */
+    static isDateString (value) {
+
+        return _.isString(value) && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z$/.test(value);
 
     }
 

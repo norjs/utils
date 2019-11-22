@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import LogUtils from "./LogUtils";
+import StringUtils from "./StringUtils";
 
 /**
  *
@@ -244,12 +245,13 @@ export class AssertUtils {
     }
 
     /**
+     * Asserts that the value is a date string, eg. `"2019-11-21T23:41:42Z"`.
      *
      * @param value {string}
      */
     static isDateString (value) {
 
-        if ( !( _.isString(value) && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z$/.test(value) ) ) {
+        if ( !StringUtils.isDateString(value) ) {
             throw new TypeError(`${this.nrName}.isDateString(value): value was not a date string: ${LogUtils.getAsString(value)}`);
         }
 
