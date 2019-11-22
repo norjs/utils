@@ -63,10 +63,28 @@ export class LogUtils {
         //        See issue: https://github.com/norjs/utils/issues/5
         if ( value && _.has(value, '$modelValue') || _.has(value, '$viewValue') ) {
 
-            return `{
-    $modelValue: ${LogUtils.getAsString(value.$modelValue, {multiLine})},
-    $viewValue: ${LogUtils.getAsString(value.$viewValue, {multiLine})}
-}`;
+            const modelValue = `$modelValue: ${LogUtils.getAsString(value.$modelValue, {multiLine})}`;
+            const viewValue = `, $viewValue: ${LogUtils.getAsString(value.$viewValue, {multiLine})}`;
+            const parsers = value && value.$parsers && value.$parsers.length ? `, ${value.$parsers.length} parsers` : "";
+            const formatters = value && value.$formatters && value.$formatters.length ? `, ${value.$formatters.length} formatters` : "";
+            const validators = value && value.$validators && Object.keys(value.$validators).length ? `, ${Object.keys(value.$validators).length} validators` : "";
+            const asyncValidators = value && value.$asyncValidators && Object.keys(value.$asyncValidators).length ? `, ${Object.keys(value.$asyncValidators).length} asyncValidators` : "";
+            const viewChangeListeners = value && value.$viewChangeListeners && value.$viewChangeListeners.length ? `, ${value.$viewChangeListeners.length} viewChangeListeners` : "";
+            const errors = value && value.$error && Object.keys(value.$error).length ? `, ${Object.keys(value.$error).length} errors` : "";
+            const pending = value && value.$pending && Object.keys(value.$pending).length ? `, ${Object.keys(value.$pending).length} pending` : "";
+
+            const untouched = value.$untouched ? 'untouched' : '';
+            const touched = value.$touched ? 'touched' : '';
+            const pristine = value.$pristine ? '|pristine' : '';
+            const dirty = value.$dirty ? '|dirty' : '';
+            const valid = value.$valid ? '|valid' : '';
+            const invalid = value.$invalid ? '|invalid' : '';
+
+            const flags = `, ${untouched}${touched}${pristine}${dirty}${valid}${invalid}`;
+
+            const name = value.$name ? `"${value.name}": ` : '';
+
+            return `{${name}${modelValue}${viewValue}${parsers}${formatters}${validators}${asyncValidators}${viewChangeListeners}${errors}${pending}${flags}`;
 
         }
 
