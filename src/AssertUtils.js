@@ -140,6 +140,32 @@ export class AssertUtils {
      * Throw an exception if condition fails
      *
      * @param value {object}
+     */
+    static isNull (value) {
+
+        if ( !_.isNull(value) ) {
+            throw new TypeError(`${this.nrName}.isNull(value): value is not null: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
+     * Throw an exception if condition fails
+     *
+     * @param value {object}
+     */
+    static isNil (value) {
+
+        if ( !_.isNil(value) ) {
+            throw new TypeError(`${this.nrName}.isNil(value): value is not null: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
+     * Throw an exception if condition fails
+     *
+     * @param value {object}
      * @param maxLength {number}
      */
     static isArrayWithMaxLength (value, maxLength) {
