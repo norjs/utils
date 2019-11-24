@@ -5,6 +5,8 @@ import HttpError from './HttpError.js';
 import LogUtils from "./LogUtils";
 import JsonUtils from "./JsonUtils";
 
+export const NR_DEFAULT_HOSTNAME = process.env.NR_DEFAULT_HOSTNAME ? process.env.NR_DEFAULT_HOSTNAME : 'localhost';
+
 /**
  *
  * @type {string}
@@ -177,16 +179,16 @@ export class HttpUtils {
         // Get until next ':', if exists
         i = value.indexOf(':');
         if (i >= 0) {
-            return value.substr(0, i) || 'localhost';
+            return value.substr(0, i) || NR_DEFAULT_HOSTNAME;
         }
 
         // Get until next '/', if exists
         i = value.indexOf('/');
         if (i >= 0) {
-            return value.substr(0, i) || 'localhost';
+            return value.substr(0, i) || NR_DEFAULT_HOSTNAME;
         }
 
-        return value || 'localhost';
+        return value || NR_DEFAULT_HOSTNAME;
 
     }
 
@@ -367,7 +369,7 @@ export class HttpUtils {
      * @return {string}
      */
     static getPortLabel (value) {
-        return `http://localhost:${value}`;
+        return `http://${NR_DEFAULT_HOSTNAME}:${value}`;
     }
 
     /**
@@ -413,7 +415,7 @@ export class HttpUtils {
         }
 
         if ( HttpUtils.isPort(value) ) {
-            server.listen(HttpUtils.getPort(value), "localhost", callback);
+            server.listen(HttpUtils.getPort(value), NR_DEFAULT_HOSTNAME, callback);
             return;
         }
 
@@ -860,7 +862,7 @@ export class HttpUtils {
 
         if ( HttpUtils.isPort(options) ) {
             return {
-                host: "localhost",
+                host: NR_DEFAULT_HOSTNAME,
                 port: HttpUtils.getPort(options)
             };
         }
