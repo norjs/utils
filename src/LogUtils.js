@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import {Logger} from "./Logger";
 import JsonUtils from "./JsonUtils";
+import PromiseUtils from "./PromiseUtils";
 
 /**
  *
@@ -58,10 +59,14 @@ export class LogUtils {
         if (_.isFunction(value)) {
 
             if ( value.nrName ) {
-                return `Function(${value.nrName})`;
+                return `Function ${value.nrName}`;
             }
 
             return "Function";
+        }
+
+        if ( PromiseUtils.isPromise(value) ) {
+            return `Promise`;
         }
 
         // @TODO: This is a quick workaround for circular structure error.
@@ -90,6 +95,16 @@ export class LogUtils {
             const name = value.$name ? `"${value.name}": ` : '';
 
             return `{${name}${modelValue}${viewValue}${parsers}${formatters}${validators}${asyncValidators}${viewChangeListeners}${errors}${pending}${flags}`;
+
+        }
+
+        if ( _.isObject(value) && value.nrName ) {
+
+            if (value.valueOf) {
+                return `Object(${value.nrName}:${JsonUtils.stringify(value.valueOf())})`;
+            }
+
+            return `Object(${value.nrName}:${JsonUtils.stringify(value)})`;
 
         }
 
