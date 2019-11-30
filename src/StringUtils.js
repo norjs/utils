@@ -1,10 +1,14 @@
 import _ from 'lodash';
-import LogUtils from "./LogUtils";
+import AssertUtils from "./AssertUtils";
 
 /**
  *
  */
 export class StringUtils {
+
+    static get nrName () {
+        return "StringUtils";
+    }
 
     /**
      * Parse a string argument to boolean
@@ -104,6 +108,93 @@ export class StringUtils {
 
         return _.isString(value) && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z$/.test(value);
 
+    }
+
+    /**
+     * Replaces placeholders in a format string like `"%0, %1, %2"` to match values in an array.
+     *
+     * @param format {string} The format string with placeholders
+     * @param params {Array.<*>} The values in an array
+     * @param strict {boolean} If enabled, will throw an exception if variable wasn't found
+     * @returns {string} Replaced values
+     * @private
+     */
+    static _formatString (format, params, strict = false) {
+
+        AssertUtils.isString(format);
+        AssertUtils.isArray(params);
+
+        return format.replace(
+            /%([0-9]+)/g,
+            (match, key) => {
+
+                const index = this.parseInteger(key);
+
+                if ( _.isNumber(index) && index < params.length ) {
+                    return params[index];
+                }
+
+                if ( strict ) {
+                    throw new TypeError(`${ this.nrName }.formatString(): Param ${ match } was not found`);
+                }
+
+                return match;
+
+            }
+        );
+
+    }
+
+    /**
+     * Replaces placeholders in a format string like `"%0, %1, %2"` to match values in an array.
+     *
+     * If the value cannot be found, the placeholder is left untouched.
+     *
+     * @param format {string} The format string with placeholders
+     * @param params {Array.<*>} The values in an array
+     * @returns {string} Replaced values
+     */
+    static formatStringWithArray (format, params) {
+        return this._formatString(format, params, false);
+    }
+
+    /**
+     * Replaces placeholders in a format string like `"%0, %1, %2"` to match values in an array.
+     *
+     * If the value cannot be found, an exception is thrown.
+     *
+     * @param format {string} The format string with placeholders
+     * @param params {Array.<*>} The values in an array
+     * @returns {string} Replaced values
+     */
+    static strictFormatStringWithArray (format, params) {
+        return this._formatString(format, params, true);
+    }
+
+    /**
+     * Replaces placeholders in a format string like `"%0, %1, %2"` to match values in an array.
+     *
+     * If the value cannot be found, the placeholder is left untouched.
+     *
+     * @param format {string} The format string with placeholders
+     * @param params {*} The values in an array
+     * @returns {string} Replaced values
+     */
+    static formatString (format, ...params) {
+        return this._formatString(format, params, false);
+    }
+
+    /**
+     * Replaces placeholders in a format string like `"%0, %1, %2"` to match values in an array.
+     *
+     * If the value cannot be found, an exception is thrown.
+     *
+     * @param format {string} The format string with placeholders
+     * @param params {*} The values in an array
+     * @returns {string} Replaced values
+     */
+    static strictFormatString (format, ...params) {
+        return this._formatString(format, params, true);
     }
 
 }

@@ -11,7 +11,7 @@ export class DateUtils {
      * @param value {Date|number|string}
      * @returns {string}
      */
-    parseToString (value) {
+    static parseToString (value) {
 
         if ( value && value instanceof Date ) {
             return value.toISOString();

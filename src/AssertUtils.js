@@ -168,6 +168,24 @@ export class AssertUtils {
      * @param value {object}
      * @param maxLength {number}
      */
+    static isArrayWithLength (value, length) {
+
+        if ( ! ( _.isArray(value) && (value.length === length) ) ) {
+            if (value.length === length) {
+                throw new TypeError(`${this.nrName}.isArrayWithLength(value, length): value is not an array: ${LogUtils.getAsString(value)}`);
+            } else {
+                throw new TypeError(`${this.nrName}.isArrayWithLength(value, length): value is not an array with ${length} items (it has ${value.length} items): ${LogUtils.getAsString(value)}`);
+            }
+        }
+
+    }
+
+    /**
+     * Throw an exception if condition fails
+     *
+     * @param value {object}
+     * @param maxLength {number}
+     */
     static isArrayWithMaxLength (value, maxLength) {
 
         if ( ! ( _.isArray(value) && value.length <= maxLength ) ) {
@@ -259,6 +277,19 @@ export class AssertUtils {
     }
 
     /**
+     * Throw an exception if condition fails
+     *
+     * @param value {*}
+     */
+    static isNotEqual (value, testValue) {
+
+        if ( value === testValue ) {
+            throw new TypeError(`${this.nrName}.isNotEqual(value): value should not be equal: ${LogUtils.getAsString(value)} === ${LogUtils.getAsString(testValue)}`);
+        }
+
+    }
+
+    /**
      *
      * @param value
      */
@@ -303,7 +334,7 @@ export class AssertUtils {
     static isInstanceOf (value, Type) {
 
         if (!( _.isObject(value) && value instanceof Type )) {
-            throw new TypeError(`${this.nrName}.isInstanceOf(value): value was not instance of ${Type}: ${LogUtils.getAsString(value)}`);
+            throw new TypeError(`${this.nrName}.isInstanceOf(value): value was not instance of ${LogUtils.getAsString(Type)}: ${LogUtils.getAsString(value)}`);
         }
 
     }

@@ -56,6 +56,11 @@ export class LogUtils {
         }
 
         if (_.isFunction(value)) {
+
+            if ( value.nrName ) {
+                return `Function(${value.nrName})`;
+            }
+
             return "Function";
         }
 
