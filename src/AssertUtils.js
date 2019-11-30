@@ -281,6 +281,19 @@ export class AssertUtils {
      *
      * @param value {*}
      */
+    static isEqualUuid (value, testValue) {
+
+        if ( !( this._isUuidString(value) && _.toUpper(value) === _.toUpper(testValue)) ) {
+            throw new TypeError(`${this.nrName}.isEqualUuid(value): value did not equal: ${LogUtils.getAsString(value)} !== ${LogUtils.getAsString(testValue)}`);
+        }
+
+    }
+
+    /**
+     * Throw an exception if condition fails
+     *
+     * @param value {*}
+     */
     static isNotEqual (value, testValue) {
 
         if ( value === testValue ) {
@@ -316,11 +329,21 @@ export class AssertUtils {
 
     /**
      *
+     * @param value {*}
+     * @returns {boolean}
+     * @private
+     */
+    static _isUuidString (value) {
+        return _.isString(value) && /^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/.test(value);
+    }
+
+    /**
+     *
      * @param value
      */
     static isUuidString (value) {
 
-        if (!( _.isString(value) && /^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/.test(value) )) {
+        if ( !this._isUuidString(value) ) {
             throw new TypeError(`${this.nrName}.isUuidString(value): value was not UUID: ${LogUtils.getAsString(value)}`);
         }
 
