@@ -18,6 +18,19 @@ export class AssertUtils {
     /**
      * Throw an exception if condition fails
      *
+     * @param value {Promise}
+     */
+    static isPromise (value) {
+
+        if (! ( value && _.isFunction(value.then) && _.isFunction(value.catch) ) ) {
+            throw new TypeError(`${this.nrName}.isPromise(value): value is not a promise: ${LogUtils.getAsString(value)}`);
+        }
+
+    }
+
+    /**
+     * Throw an exception if condition fails
+     *
      * @param value {string}
      */
     static isString (value) {
@@ -31,7 +44,7 @@ export class AssertUtils {
     /**
      * Throw an exception if condition fails
      *
-     * @param value {undefined}
+     * @param value {*}
      */
     static isUndefined (value) {
 
